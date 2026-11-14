@@ -1,0 +1,157 @@
+@import 'tailwindcss';
+
+/*
+ * ARES design tokens — the single source of truth for color/typography/motion.
+ * See docs/DESIGN_SYSTEM.md. Components must consume these tokens; never hardcode hex.
+ */
+@theme {
+  /* Surfaces & lines */
+  --color-space: #080b12;
+  --color-surface: #111722;
+  --color-surface-2: #161e2d;
+  --color-line: #232c3f;
+  --color-line-strong: #33405c;
+
+  /* Brand */
+  --color-accent: #e56b3f;
+  --color-accent-strong: #f28256;
+  --color-cyan: #53d6e8;
+
+  /* Semantic */
+  --color-amber: #fbbf24;
+  --color-danger: #f87171;
+  --color-success: #34d399;
+
+  /* Text */
+  --color-ink: #f5f7fa;
+  --color-ink-dim: #9aa7bd;
+  --color-ink-faint: #6b7a94;
+
+  /* Typography */
+  --font-display: 'Orbitron', 'Inter', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', 'Courier New', monospace;
+
+  /* Shadows */
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -12px rgb(0 0 0 / 0.55);
+  --shadow-glow-accent: 0 0 24px rgb(229 107 63 / 0.25);
+  --shadow-glow-cyan: 0 0 24px rgb(83 214 232 / 0.2);
+
+  /* Motion */
+  --animate-fade-up: fade-up 0.55s ease-out both;
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-spin-slow: spin-slow 90s linear infinite;
+  --animate-pulse-soft: pulse-soft 2.8s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-space font-sans text-ink antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent/35 text-ink;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-surface-2;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-line-strong;
+    background-clip: padding-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Glass panel — the core surface treatment */
+  .panel {
+    @apply rounded-xl border border-line bg-white/[0.03] shadow-panel;
+  }
+  .panel-elevated {
+    @apply rounded-xl border border-line bg-surface-2/80 shadow-panel;
+  }
+
+  /* Sticky navigation glass */
+  .glass-nav {
+    @apply border-b border-line bg-space/85 backdrop-blur-md;
+  }
+
+  /* Small uppercase technical label */
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-cyan/90;
+  }
+
+  /* Faint lat/lon grid texture for hero / empty backgrounds */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(83 214 232 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(83 214 232 / 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  /* Restrained accent glow, hero moments only */
+  .text-glow-accent {
+    text-shadow: 0 0 22px rgb(229 107 63 / 0.4);
+  }
+}

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+coverage/
+
+# Vite / TS incremental caches
+*.tsbuildinfo
+.vite/
+
+# Data pipeline caches and generated scientific assets
+.cache/
+public/data/
+!public/data/.gitkeep
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea/
