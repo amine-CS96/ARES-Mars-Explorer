@@ -21,6 +21,9 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
             return 'vendor-react'
           }
+          if (/[\\/]node_modules[\\/](three|three-stdlib|@react-three)[\\/]/.test(id)) {
+            return 'vendor-three'
+          }
           if (/[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/.test(id)) return 'vendor-query'
           if (/[\\/]node_modules[\\/]zod[\\/]/.test(id)) return 'vendor-zod'
           if (/[\\/]node_modules[\\/](@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/.test(id)) {

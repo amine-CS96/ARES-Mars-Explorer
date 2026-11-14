@@ -48,7 +48,17 @@ src/
 │                               tooltip, status-badges, section-heading
 ├── features/
 │   ├── dashboard/              hero, module grid, stats, featured POIs, program, data strip
-│   ├── globe/                  Phase 2 (ModuleStatusPage for now)
+│   ├── globe/                  3D Mars globe (live since Phase 2)
+│   │   ├── GlobePage.tsx       orchestration, HUD wiring, honest footer
+│   │   ├── GlobeCanvas.tsx     WebGL probe, Canvas, scene error boundary
+│   │   ├── GlobeHud.tsx        overlay: layers, quality, legend, attribution, cursor
+│   │   ├── GlobeSiteRail.tsx   keyboard-accessible "jump to site" chips
+│   │   ├── GlobeFallback.tsx   honest failure surface (flat live mosaic + explanation)
+│   │   ├── composeMosaic.ts    verified tiles → canvas (concurrency, retry, degradation)
+│   │   ├── useGlobeMosaic.ts   TanStack Query cache per (layer, zoom)
+│   │   ├── math.ts             PURE: projection, tile pyramid, tiers, graticule, 3D colors
+│   │   └── scene/              MarsScene, MarsGlobeMesh, AtmosphereShell, GraticuleMesh,
+│   │                           PoiMarkers (imports three; the only three-touching UI layer)
 │   ├── mars-explorer/          Phase 3
 │   ├── points-of-interest/     Atlas: search/filter/detail (live since Phase 1)
 │   ├── hazard-analysis/        Phase 4
@@ -60,6 +70,7 @@ src/
 │   ├── dataCatalog.ts          typed registry over data/datasets.ts
 │   └── types.ts
 ├── stores/uiStore.ts
+├── hooks/usePrefersReducedMotion.ts
 ├── types/                      geo.ts, poi.ts, dataset.ts (zod schemas + TS types)
 ├── data/                       places.ts, datasets.ts, planetaryFacts.ts, program.ts
 ├── utils/                      cn.ts, geo.ts, format.ts
@@ -69,9 +80,10 @@ src/
 
 ## 3. Data flow examples
 
-**Tiles → pixels (Phase 2/3):** feature → `services/nasa/marsTrekProvider.buildTrekTileUrl()`
-→ TanStack Query fetch/cache → renderer (R3F texture / CSS `<img>`) → attribution line rendered
-with the layer descriptor.
+**Tiles → pixels (Phase 2, live):** feature → `services/nasa/marsTrekProvider.buildTrekTileUrl()`
+→ TanStack Query composites verified tiles onto a canvas (`features/globe/composeMosaic.ts`,
+D-011) → R3F `CanvasTexture` → renderer; attribution rendered with the layer descriptor in the
+globe HUD. Regional tiles (Phase 3) follow the same path once GetCapabilities are parsed.
 
 **Catalog → UI (Phase 1, live):** `data/places.ts` (zod-validated) → `features/points-of-interest`
 components → Atlas page/dashboard. No runtime fabrication.

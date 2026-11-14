@@ -47,3 +47,13 @@ task, not a code task. Consequence: globe covers the planet, explorer is region-
 ## D-010 — Longitude convention: east-positive ±180 with per-entry conversion notes (2026-11-14)
 Gazetteer/Trek sources use 0–360°E; UI displays ±180 with E/W. Conversions happen once in
 `data/` with comments, so downstream code and tests see one convention.
+
+## D-011 — Globe texture = client-side composite of verified WMTS tiles (2026-11-14)
+No verified single-image endpoint exists for a global Mars texture; the verified source is the
+WMTS tile service. The globe therefore composites tiles onto a canvas in the browser
+(`features/globe/composeMosaic.ts`, concurrency-limited, one bounded retry, failed tiles stay
+dark and are counted). Trek serves `Access-Control-Allow-Origin: *` (verified), so the canvas is
+WebGL-safe without a server. **Consequence:** zero infrastructure, honest `derived` labeling,
+session-cached composites; a self-hosted pre-composed texture remains the fallback if Trek
+ever adds CORS restrictions.
+

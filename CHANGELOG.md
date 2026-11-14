@@ -39,3 +39,35 @@ All significant changes to ARES. Format: date — phase — summary.
   walkthrough of dashboard, atlas (dialog/filter/search), data-sources and a placeholder
   module route, plus mobile drawer navigation — zero console errors; live MOLA tiles
   confirmed HTTP 200 in the browser network log.
+- Git: initial commit `50a4a20` on `main` (92 files).
+
+## 2026-11-14 — Phase 2 — 3D Mars globe (Module B)
+
+- **K-6 gate first**: verified Trek tiles serve `Access-Control-Allow-Origin: *` — WebGL-safe
+  without any server (K-6 resolved; D-011 records the composite decision).
+- Installed `three` 0.187.0, `@react-three/fiber` 9.8.2, `@react-three/drei` 10.7.9; added the
+  `vendor-three` manual chunk (with `three-stdlib`) — three.js loads only on `/globe`.
+- **Pure math module** (`features/globe/math.ts` + tests): lat/lon ↔ sphere projection derived
+  from and verified against the three r0.187 `SphereGeometry` source; 2:1 WMTS tile pyramid
+  (zoom z → `2^(z+1)`×`2^z`); quality tiers; graticule builder; marker color token mirror;
+  adaptive-quality decision rule. Round-trip tests over every catalog POI.
+- **Mosaic composer** (`composeMosaic.ts`): composites verified Trek tiles onto a canvas
+  (6-way concurrency, abortable, monotonic progress, one bounded retry pass); failed tiles stay
+  dark and are counted — never substituted. TanStack Query caches composites per (layer, zoom)
+  with previous-frame placeholder behavior.
+- **Scene**: textured planet (MOLA hillshade / Viking color / MOLA+HRSC blend), static sun,
+  illustrative atmosphere rim shader, 15° graticule with highlighted equator/prime meridian,
+  category-colored POI markers (hover labels; click → shared Atlas detail dialog), damped
+  orbit/zoom/touch controls, camera fly-to on selection (reduced-motion aware), idle spin that
+  pauses on selection, FPS probe with auto-downgrade.
+- **HUD + page**: layer/quality pickers, fps + texture readout, cursor lat/lon readout,
+  category legend, per-layer attribution (NASA/JPL/USGS/ESA-DLR per layer), grid/spin toggles,
+  loading progress, keyboard-accessible site rail, honest footer notes (texture derived,
+  markers labeled, atmosphere illustrative, not an operational system).
+- **Failure surfaces**: WebGL probe → flat live-mosaic fallback; scene error boundary;
+  tile-fetch failure → retry + explained fallback.
+- **Verified live**: 60 fps at all tiers (medium default; high = 4096×2048, 128 tiles);
+  geography confirmed (Olympus marker on the Tharsis shield in both texture layers); marker →
+  dialog on both paths; cursor readout correct; zero console errors; degradation UI shown when
+  2/128 tiles timed out (K-10 recorded, retry added).
+- Quality gates: typecheck ✓ · lint ✓ · Vitest 42/42 ✓ · build exit 0 with clean chunk graph.

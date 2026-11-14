@@ -8,9 +8,10 @@ It combines real NASA/ESA/USGS planetary data, interactive 3D visualization, ter
 analysis, safe route planning (A* over terrain cost), and a Marswalk mission simulator with an
 explicit, documented scientific basis.
 
-**Status:** Phase 1 of 6 — professional foundation, design system, dashboard, points-of-interest
-atlas and data-source registry (all built on verified NASA endpoints). See
-[`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the live state of development.
+**Status:** Phase 2 of 6 — professional foundation plus the **live 3D Mars globe** (Three.js
+planet textured from verified NASA Trek tiles, markers, quality tiers, honest fallbacks), on
+top of the Phase 1 design system, dashboard, points-of-interest atlas and data-source registry.
+See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the live state of development.
 
 ---
 
@@ -19,7 +20,7 @@ atlas and data-source registry (all built on verified NASA endpoints). See
 | Module | Purpose | Phase |
 | --- | --- | --- |
 | **Mission Dashboard** | Mission control overview: planetary statistics, featured sites, data-source status | 1 ✓ |
-| **Interactive Mars Globe** | Real-texture 3D globe (Three.js), markers, atmosphere, day/night lighting | 2 |
+| **Interactive Mars Globe** | Real-texture 3D globe (Three.js), markers, atmosphere, quality tiers | 2 ✓ |
 | **Surface Explorer** | Jezero Crater in 2D/3D: imagery, elevation, layers, terrain panels | 3 |
 | **Points of Interest** | Searchable, source-cited collection of Martian exploration sites | 1 ✓ (data live) |
 | **Hazard Analysis** | Slope/roughness-based terrain difficulty with documented criteria | 4 |

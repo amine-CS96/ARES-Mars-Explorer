@@ -1,7 +1,7 @@
 import type { DataKind, DatasetStatus } from '@/types/dataset'
 import type { CoordinateAccuracy } from '@/types/geo'
 import type { PhaseStatus } from '@/data/program'
-import type { PoICategory } from '@/types/poi'
+import { POI_CATEGORY_LABELS, type PoICategory } from '@/types/poi'
 import { Badge } from '@/components/ui/badge'
 
 /**
@@ -62,16 +62,8 @@ export function PhaseBadge({ status }: { status: PhaseStatus }) {
   return <Badge variant={meta.variant}>{meta.label}</Badge>
 }
 
-const CATEGORY_LABELS: Record<PoICategory, string> = {
-  'landing-site': 'Landing site',
-  mission: 'Mission site',
-  geology: 'Geology',
-  region: 'Region',
-  fiction: 'Fiction',
-}
-
 export function CategoryBadge({ category }: { category: PoICategory }) {
-  return <Badge variant="neutral">{CATEGORY_LABELS[category]}</Badge>
+  return <Badge variant="neutral">{POI_CATEGORY_LABELS[category]}</Badge>
 }
 
 export function FictionBadge() {

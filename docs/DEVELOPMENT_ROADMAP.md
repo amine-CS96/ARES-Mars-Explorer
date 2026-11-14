@@ -16,17 +16,19 @@ Sources registry, Trek provider, tests.
 - [x] Dashboard (A1–A7)
 - [x] Atlas (D1–D5 data foundation)
 - [x] Data Sources (H1–H4 registry foundation)
-- [ ] **Verification pass: typecheck + lint + test + build + browser walkthrough** ← current
+- [x] **Verification pass: typecheck + lint + test + build + browser walkthrough** *(2026-11-14)*
 
-## PHASE 2 — 3D Mars experience (Module B)
-- [ ] R3F globe with Trek textures (MOLA color hillshade base; Viking color option)
-- [ ] Lighting + atmosphere rim shader; day/night where practical
-- [ ] Orbit/zoom/touch controls; smooth transitions
-- [ ] Lat/lon grid + POI markers (from catalog); marker → Atlas detail
-- [ ] Quality tiers (high/med/low) + adaptive resolution; resource disposal
-- [ ] WebGL-failure fallback; texture-load fallback
-- **DoD:** 60 fps desktop / 30+ fps mid mobile; no console errors; bundle code-split; verified
-  against verified-tiles-only policy.
+## PHASE 2 — 3D Mars experience (Module B) ✅
+- [x] R3F globe with Trek textures (MOLA color hillshade base; Viking color option; HRSC blend option)
+- [x] Lighting + atmosphere rim shader (static sun; a true day/night cycle deferred — noted)
+- [x] Orbit/zoom/touch controls; smooth transitions (damped OrbitControls + camera fly-to)
+- [x] Lat/lon grid + POI markers (from catalog); marker → Atlas detail (rail + direct click)
+- [x] Quality tiers (high/med/low) + adaptive resolution (auto-downgrade); resource disposal
+- [x] WebGL-failure fallback; texture-load fallback (bounded tile retry + honest degradation)
+- **DoD met:** 60 fps desktop measured at all tiers (medium default; 4096×2048 high tier);
+  zero console errors in a full browser walkthrough; three.js fully code-split (`vendor-three`
+  lazy chunk); textures composed only from verified WMTS layers. Mobile 30+ fps to be confirmed
+  on device in Phase 6 (auto-downgrade + low tier are the mitigation). *(done 2026-11-14)*
 
 ## PHASE 3 — Scientific surface exploration (Module C)
 - [ ] Region config for Jezero; regional Trek tiles via per-layer GetCapabilities

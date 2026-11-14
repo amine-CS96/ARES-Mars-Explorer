@@ -16,7 +16,13 @@ from this environment (kept only if another verified source requires it).
   `https://{endpoint}/1.0.0/{Style}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.{ext}`
 - **Verified concrete template (✅ 200 on `.../0/0/0.jpg`):**
   `https://trek.nasa.gov/tiles/Mars/EQ/{LAYER}/1.0.0/default/default028mm/{Z}/{ROW}/{COL}.{ext}`
-- **TileMatrixSet:** `default028mm`; zoom 0 = 2 cols × 1 row for global products.
+- **TileMatrixSet:** `default028mm`; zoom 0 = 2 cols × 1 row for global products (2:1 grid:
+  zoom z → `2^(z+1)` cols × `2^z` rows — verified live at zoom 0 (MOLA), zoom 1 (Viking, HRSC)
+  and zoom 3 during Phase 2 globe composition).
+- **CORS:** `Access-Control-Allow-Origin: *` on tile responses (verified 2026-11-14 with an
+  `Origin: http://localhost:5173` request) — tiles are safe for WebGL textures and client-side
+  canvas composites (`crossOrigin='anonymous'`; see `docs/KNOWN_ISSUES.md` K-6 resolution and
+  `docs/DECISIONS.md` D-011).
 - **Layer catalog:** 146 Mars products fetched from
   `https://trek.nasa.gov/mars/TrekServices/ws/index/eq/searchItems?...` (✅ 200, 336 KB JSON) —
   titles, missions, instruments captured in the run log; the catalog is the source of truth.

@@ -1,7 +1,7 @@
 # PROJECT_STATUS
 
 > Live state of development. Update after every significant phase.
-> **Current phase: PHASE 1 — Professional application foundation (COMPLETE, verified)**
+> **Current phase: PHASE 2 — 3D Mars globe (COMPLETE, verified)**
 
 Last updated: 2026-11-14
 
@@ -11,14 +11,14 @@ Last updated: 2026-11-14
 
 | Item | State |
 | --- | --- |
-| Repository | Initialized (git), main branch |
-| Build | `npm run build` = `tsc -b && vite build` — **PASSING** (exit 0; vendor chunks split, main index 264 kB / 82.7 kB gzip) |
-| Tests | Vitest — **26/26 passing** (geo math, catalog data integrity, Button, AtlasPage) |
+| Repository | Initialized (git), main branch — Phase 1 committed (`50a4a20`) |
+| Build | `npm run build` = `tsc -b && vite build` — **PASSING** (three.js isolated in lazy `vendor-three` chunk, 947 kB / 254 kB gzip, fetched only on `/globe`) |
+| Tests | Vitest — **42/42 passing** (geo, catalog integrity, globe math, Button, AtlasPage, GlobeFallback) |
 | Lint | `eslint .` — **PASSING** (0 errors, 0 warnings) |
 | Typecheck | `tsc -b` strict — **PASSING** |
-| Browser verification | **PASSING** — all routes walked in live browser, zero console errors anywhere |
-| Dependencies | React 19 / Vite 7 / TS 5.9 / Tailwind v4 / Zustand / TanStack Query / Zod / Radix |
-| Network verification | Trek WMTS tiles ✓ (6 layer IDs), MMGIS waypoints ✓, NSSDCA ✓, USGS Gazetteer ✓, ODE ✓, api.nasa.gov ✓, GISS Mars24 ✓ |
+| Browser verification | **PASSING** — Phase 2 globe walked live: all three texture layers composed (MOLA/Viking/HRSC, 200s), marker↔texture geography verified, dialogs, tiers, cursor readout; zero console errors |
+| Dependencies | + three 0.187 / @react-three/fiber 9.8 / @react-three/drei 10.7 (Phase 2, lazy) |
+| Network verification | Trek WMTS tiles ✓ (6 layer IDs + CORS `*`), MMGIS waypoints ✓, NSSDCA ✓, USGS Gazetteer ✓, ODE ✓, api.nasa.gov ✓, GISS Mars24 ✓ |
 
 ## Completed
 
@@ -69,12 +69,36 @@ Last updated: 2026-11-14
         no horizontal overflow at 912 px
       - Zero console errors on every visited route
 
+### Phase 2 — 3D Mars globe (Module B) — COMPLETE
+- [x] K-6 gate verified first: Trek tiles send `Access-Control-Allow-Origin: *` → WebGL-safe
+- [x] `three` 0.187 / `@react-three/fiber` 9.8 / `@react-three/drei` 10.7 installed; `vendor-three`
+      manual chunk (lazy, fetched only on `/globe`; three-stdlib moved in to kill a chunk cycle)
+- [x] Pure math layer (`features/globe/math.ts`, unit-tested): lat/lon ↔ sphere projection
+      (verified against three r0.187 SphereGeometry source), 2:1 tile pyramid, quality tiers,
+      graticule builder, marker color tokens, adaptive-quality rule
+- [x] Mosaic composer (`composeMosaic.ts`): verified tiles → canvas, 6-way concurrency,
+      one bounded retry pass (absorbs transient `ERR_TIMED_OUT`), failed tiles stay dark +
+      counted; TanStack Query cache per (layer, zoom) with previous-frame placeholder
+- [x] Scene (`scene/`): MOLA/Viking/HRSC textured planet, static sun lighting, illustrative
+      atmosphere rim shader (BackSide fresnel), 15° graticule (equator/prime highlighted),
+      category-colored POI markers with hover labels and click → shared Atlas detail dialog,
+      damped OrbitControls (touch-ready), camera fly-to on site selection (reduced-motion aware),
+      idle spin (auto-pauses on selection), FPS probe
+- [x] HUD: texture-layer picker, quality picker (L/M/H + auto), fps/texture readout, cursor
+      lat/lon readout, category legend, per-layer attribution, grid/spin toggles, honest
+      degradation notes; site rail for keyboard access; loading progress (tiles x/y)
+- [x] Failure surfaces: WebGL probe → flat live-mosaic fallback; scene error boundary →
+      same; tile-fetch failure → retry + fallback with explanation; all labeled
+- [x] Verified live in browser: 60 fps at medium/high/low tiers, geographic accuracy checked
+      (Olympus Mons marker on the Tharsis shield in two texture layers), zero console errors
+- [x] Docs updated: D-011 (composite decision), K-6 resolved, K-10 recorded (transient tile
+      timeouts + mitigation), DATA_SOURCES §1 extended (CORS + zoom-grid checks), ARCHITECTURE
+      directory/data-flow, TECH_STACK, README
+
 ## In progress
-- (nothing — Phase 1 closed)
+- (nothing — Phase 2 closed)
 
 ## Pending (next phases)
-- **Phase 2 — 3D Mars globe**: Three.js/R3F globe from Trek WMTS textures, atmosphere shader,
-  markers, transitions, quality tiers, WebGL fallback
 - **Phase 3 — Jezero surface explorer**: regional Trek tiles (derive URLs from each layer's
   GetCapabilities), DEM ingestion via Node `geotiff.js`+`sharp` pipeline (no Python here),
   layer manager, elevation/slope panels
@@ -97,6 +121,7 @@ Last updated: 2026-11-14
   another verified source requires them, marked accordingly in `docs/DATA_SOURCES.md`
 
 ## Next recommended task
-Start **Phase 2 — 3D Mars globe** (Three.js via React Three Fiber): globe textured from Trek
-WMTS imagery, atmosphere shader, POI markers, orbit controls with quality tiers and a WebGL
-fallback. First step: verify Trek tile CORS for WebGL texture use (K-6).
+Start **Phase 3 — Jezero surface explorer** (Module C): parse each Jezero layer's WMTS
+GetCapabilities for the correct matrix sets/zoom ranges (K-3), build the Node DEM pipeline
+(`geotiff.js` + `sharp`, D-008), then the 2D explorer + 3D terrain view with elevation/slope
+panels — all elevation numbers labeled and never fabricated.

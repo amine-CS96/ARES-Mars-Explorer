@@ -25,7 +25,7 @@ Chosen stack, versions and the reasoning. Deviations require a note in `DECISION
 
 | Phase | Adds |
 | --- | --- |
-| 2 | `three`, `@react-three/fiber`, `@react-three/drei` (lazy-loaded; never in initial bundle) |
+| 2 | `three`, `@react-three/fiber`, `@react-three/drei` (lazy-loaded; never in initial bundle) — **installed 2026-11-14**: three 0.187.0, R3F 9.8.2, drei 10.7.9; `vendor-three` manual chunk loaded only on `/globe` |
 | 3 | Node data pipeline: `geotiff.js` + `sharp` (dev-time asset generation, not runtime deps) |
 | 4 | `recharts` (elevation profiles, mission charts) |
 | 6 | `@playwright/test` (E2E smoke of critical flows) |

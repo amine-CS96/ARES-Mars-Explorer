@@ -5,6 +5,15 @@ import type { CoordinateAccuracy } from '@/types/geo'
 export const POI_CATEGORIES = ['landing-site', 'mission', 'geology', 'region', 'fiction'] as const
 export type PoICategory = (typeof POI_CATEGORIES)[number]
 
+/** Human labels for the categories — single source shared by badges, legend, filters. */
+export const POI_CATEGORY_LABELS: Record<PoICategory, string> = {
+  'landing-site': 'Landing site',
+  mission: 'Mission site',
+  geology: 'Geology',
+  region: 'Region',
+  fiction: 'Fiction',
+}
+
 /** An explicit, verifiable source reference. URLs must be http(s). */
 export const sourceRefSchema = z.object({
   label: z.string().min(3),
