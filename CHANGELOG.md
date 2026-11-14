@@ -71,3 +71,29 @@ All significant changes to ARES. Format: date — phase — summary.
   dialog on both paths; cursor readout correct; zero console errors; degradation UI shown when
   2/128 tiles timed out (K-10 recorded, retry added).
 - Quality gates: typecheck ✓ · lint ✓ · Vitest 42/42 ✓ · build exit 0 with clean chunk graph.
+
+## 2026-11-14 — Phase 3 — Jezero surface explorer (Module C)
+
+- **K-3 gate resolved**: parsed WMTS GetCapabilities for `JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd`
+  and `JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0`; both use Trek `default028mm` matrix set.
+  HiRISE serves zooms 14–17 inside bbox 77.2229°E–77.5840°E / 18.3068°N–18.6693°N; CTX serves
+  zooms 8–13. Live tile requests verified (HTTP 200 inside bbox, 404 outside).
+- **DEM pipeline** (`scripts/build-jezero-terrain.mjs`): downloaded the verified USGS CTX 20 m
+  DTM mosaic (9.2 MB) and processed it with `geotiff.js` + `sharp` (no Python). Outputs committed
+  to `public/data/`: `jezero_heightmap_rg16.png` (R+G encode 16-bit elevation, ~4.7 MB),
+  `jezero_slope_degrees.png` (8-bit grayscale, ~950 kB), `jezero_metadata.json`. Round-trip
+  elevation error < 0.01 m against the source GeoTIFF.
+- **Rover track snapshot**: fetched the verified MMGIS `M20_waypoints.json` feed (589 kB) and
+  committed it to `public/data/` with a generated-at timestamp in the metadata.
+- **2D explorer**: viewport-aware tile compositor, pan/zoom (pointer drag + wheel), HiRISE/CTX
+  layer toggles, live attribution panel, honest degradation notes for failed tiles, SVG rover-track
+  overlay.
+- **3D terrain view**: R3F custom shader material displaces a plane by the RG heightmap and colors
+  it by slope class; OrbitControls; vertical-exaggeration slider (1–6×).
+- **Cursor inspection panel**: lat/lon, elevation (measured), slope (derived) with slope-class badge.
+  Verified readout at Jezero center: −2568.6 m / 0.4°, consistent with published Perseverance site
+  elevations around −2545 to −2600 m relative to MOLA areoid.
+- **Failure surfaces / honesty**: tile-fetch failure → dark patches + count; no fabricated elevation;
+  all DEM-derived values labeled `measured` or `derived` in the UI and metadata.
+- Quality gates: typecheck ✓ · lint ✓ · Vitest 42/42 ✓ · build exit 0; browser walkthrough with
+  zero console errors.

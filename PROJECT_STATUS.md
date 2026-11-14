@@ -1,7 +1,7 @@
 # PROJECT_STATUS
 
 > Live state of development. Update after every significant phase.
-> **Current phase: PHASE 2 — 3D Mars globe (COMPLETE, verified)**
+> **Current phase: PHASE 3 — Jezero surface explorer (COMPLETE, verified)**
 
 Last updated: 2026-11-14
 
@@ -11,14 +11,14 @@ Last updated: 2026-11-14
 
 | Item | State |
 | --- | --- |
-| Repository | Initialized (git), main branch — Phase 1 committed (`50a4a20`) |
-| Build | `npm run build` = `tsc -b && vite build` — **PASSING** (three.js isolated in lazy `vendor-three` chunk, 947 kB / 254 kB gzip, fetched only on `/globe`) |
+| Repository | Initialized (git), main branch — Phase 2 committed (`fbc3bf9`) |
+| Build | `npm run build` = `tsc -b && vite build` — **PASSING** (three.js isolated in lazy `vendor-three` chunk, 947 kB / 254 kB gzip, fetched only on `/globe` and `/explorer` 3D view) |
 | Tests | Vitest — **42/42 passing** (geo, catalog integrity, globe math, Button, AtlasPage, GlobeFallback) |
 | Lint | `eslint .` — **PASSING** (0 errors, 0 warnings) |
 | Typecheck | `tsc -b` strict — **PASSING** |
-| Browser verification | **PASSING** — Phase 2 globe walked live: all three texture layers composed (MOLA/Viking/HRSC, 200s), marker↔texture geography verified, dialogs, tiers, cursor readout; zero console errors |
-| Dependencies | + three 0.187 / @react-three/fiber 9.8 / @react-three/drei 10.7 (Phase 2, lazy) |
-| Network verification | Trek WMTS tiles ✓ (6 layer IDs + CORS `*`), MMGIS waypoints ✓, NSSDCA ✓, USGS Gazetteer ✓, ODE ✓, api.nasa.gov ✓, GISS Mars24 ✓ |
+| Browser verification | **PASSING** — Phase 3 explorer walked live: HiRISE + CTX regional tiles composed, 2D pan/zoom, cursor elevation/slope readout (−2568.6 m / 0.4° at Jezero center), 3D displaced terrain view, layer toggles with attribution, rover track; zero console errors |
+| Dependencies | + three 0.187 / @react-three/fiber 9.8 / @react-three/drei 10.7 (Phase 2, lazy) · + geotiff 3.0.5 + sharp 0.35.5 (Phase 3 dev-time pipeline) |
+| Network verification | Trek WMTS tiles ✓ (6 global + 2 regional layer IDs + CORS `*`), MMGIS waypoints ✓, USGS planetarymaps DEM ✓, NSSDCA ✓, USGS Gazetteer ✓, ODE ✓, api.nasa.gov ✓, GISS Mars24 ✓ |
 
 ## Completed
 
@@ -95,13 +95,29 @@ Last updated: 2026-11-14
       timeouts + mitigation), DATA_SOURCES §1 extended (CORS + zoom-grid checks), ARCHITECTURE
       directory/data-flow, TECH_STACK, README
 
+### Phase 3 — Jezero surface explorer (Module C) — COMPLETE
+- [x] K-3 gate: parsed HiRISE + CTX GetCapabilities; verified both use Trek `default028mm`
+      matrix set; HiRISE serves zooms 14–17 inside WGS84 bbox 77.2229°E–77.5840°E,
+      18.3068°N–18.6693°N; CTX serves zooms 8–13
+- [x] DEM pipeline (`scripts/build-jezero-terrain.mjs`): USGS CTX 20 m DTM GeoTIFF (9.2 MB)
+      → `jezero_heightmap_rg16.png` (R+G encode 16-bit elevation) +
+      `jezero_slope_degrees.png` + `jezero_metadata.json`; round-trip error < 0.01 m
+- [x] MMGIS rover-waypoint snapshot fetched and committed to `public/data/M20_waypoints.json`
+      (dated by fetch timestamp in metadata)
+- [x] 2D slippy map: pan/zoom, viewport tile compositor, layer toggles (HiRISE/CTX), attribution,
+      honest degradation notes for failed tiles, rover-track SVG overlay
+- [x] 3D terrain view: R3F plane displaced by the RG heightmap in a custom vertex shader,
+      slope-class coloring in fragment shader, OrbitControls, vertical-exaggeration slider
+- [x] Cursor inspection panel: lat/lon, elevation (measured), slope (derived) with class badge
+- [x] Verified live in browser: HiRISE + CTX layers switch, pan/zoom, elevation readout matches
+  expected range, 3D view renders, zero console errors
+- [x] Docs updated: K-3 resolved, DATA_SOURCES regional layers + DEM source, ARCHITECTURE
+      Module C tree, README, CHANGELOG
+
 ## In progress
-- (nothing — Phase 2 closed)
+- (nothing — Phase 3 closed)
 
 ## Pending (next phases)
-- **Phase 3 — Jezero surface explorer**: regional Trek tiles (derive URLs from each layer's
-  GetCapabilities), DEM ingestion via Node `geotiff.js`+`sharp` pipeline (no Python here),
-  layer manager, elevation/slope panels
 - **Phase 4 — Terrain analysis & routing**: slope classification, hazard overlay, A* on
   terrain-cost grid, route comparison, elevation profiles (Recharts)
 - **Phase 5 — Marswalk simulator**: oxygen budget (Pandolf-derived), Mars24 mission clock,
@@ -109,19 +125,18 @@ Last updated: 2026-11-14
 - **Phase 6 — Polish**: performance, a11y, Playwright E2E, demo script, deployment
 
 ## Known bugs
-- None recorded. Open risks/limitations tracked in `docs/KNOWN_ISSUES.md` (K-1…K-9).
+- None recorded. Open risks/limitations tracked in `docs/KNOWN_ISSUES.md` (K-1…K-10).
 
 ## Environment notes (affect development)
 - PowerShell execution policy blocks `npm.ps1` → use `npm.cmd` (documented; do not "fix" in scripts)
 - PowerShell wraps npm's stderr banner (e.g. `> vite ...`) as error records → true exit codes must be
   read via `cmd /c "npm run <script>"` (see K-9); a "failed" npm run in PS may actually be exit 0
-- Python is **not installed** on this machine → data pipeline planned in Node (D-008)
+- Python is **not installed** on this machine → data pipeline uses Node (D-008)
 - `mars.nasa.gov/mars2020/` returns 302 (redirect target not pinned); `science.nasa.gov/mars/`
   and `hirise.lpl.arizona.edu` unreachable from this environment (000) — URLs kept only where
   another verified source requires them, marked accordingly in `docs/DATA_SOURCES.md`
 
 ## Next recommended task
-Start **Phase 3 — Jezero surface explorer** (Module C): parse each Jezero layer's WMTS
-GetCapabilities for the correct matrix sets/zoom ranges (K-3), build the Node DEM pipeline
-(`geotiff.js` + `sharp`, D-008), then the 2D explorer + 3D terrain view with elevation/slope
-panels — all elevation numbers labeled and never fabricated.
+Start **Phase 4 — Terrain analysis & route planning** (Modules E + F): slope/difficulty grids,
+hazard overlay, A* pathfinding over the committed DEM cost grid, route UI with profiles and
+explanation panel.

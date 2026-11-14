@@ -36,13 +36,6 @@ const SHORT_LAYER_NAMES: Record<string, string> = {
   Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp_lzw: 'MOLA+HRSC blend',
 }
 
-/** Layer-specific credit lines (mission/instrument owners, per docs/DATA_SOURCES.md). */
-const LAYER_CREDITS: Record<string, string> = {
-  Mars_MGS_MOLA_ClrShade_merge_global_463m: 'NASA/JPL-Caltech/GSFC/MSSS · USGS Astrogeology (MOLA)',
-  Mars_Viking_MDIM21_ClrMosaic_global_232m: 'USGS Astrogeology · NASA/JPL (Viking MDIM 2.1)',
-  Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp_lzw:
-    'NASA/JPL/USGS · ESA/DLR/FU Berlin (Mars Express HRSC)',
-}
 
 export function GlobeHud(props: GlobeHudProps) {
   const { layer } = props
@@ -163,7 +156,7 @@ export function GlobeHud(props: GlobeHudProps) {
             {SHORT_LAYER_NAMES[layer.id] ?? layer.title}
           </p>
           <p className="mt-0.5 font-mono text-[9px] leading-relaxed text-ink-faint">
-            {LAYER_CREDITS[layer.id] ?? 'NASA/JPL/USGS'} · {layer.mission}
+            {layer.attribution} · {layer.mission}
           </p>
           <p className="mt-0.5 font-mono text-[9px] text-ink-faint">
             Derived composite · {props.mosaic.tilesTotal} verified WMTS tiles

@@ -30,14 +30,16 @@ Sources registry, Trek provider, tests.
   lazy chunk); textures composed only from verified WMTS layers. Mobile 30+ fps to be confirmed
   on device in Phase 6 (auto-downgrade + low tier are the mitigation). *(done 2026-11-14)*
 
-## PHASE 3 — Scientific surface exploration (Module C)
-- [ ] Region config for Jezero; regional Trek tiles via per-layer GetCapabilities
-- [ ] DEM pipeline (Node `geotiff.js`+`sharp`) → heightmap PNG + slope grid + metadata JSON
-- [ ] 2D explorer (pan/zoom, coordinate readout) + 3D terrain view (GPU displacement)
-- [ ] Layer manager with per-layer source/resolution/attribution
-- [ ] MMGIS rover-track layer (snapshot, dated)
-- **DoD:** elevation readout at cursor matches published values within tolerance; all layers
-  toggleable with attribution visible; no fabricated elevation.
+## PHASE 3 — Scientific surface exploration (Module C) ✅
+- [x] Region config for Jezero; regional Trek tiles via per-layer GetCapabilities
+- [x] DEM pipeline (Node `geotiff.js`+`sharp`) → heightmap PNG + slope grid + metadata JSON
+- [x] 2D explorer (pan/zoom, coordinate readout) + 3D terrain view (GPU displacement)
+- [x] Layer manager with per-layer source/resolution/attribution
+- [x] MMGIS rover-track layer (snapshot, dated)
+- **DoD met:** cursor elevation at Jezero center reads −2568.6 m (consistent with published
+  Perseverance/Three Forks values around −2545 to −2600 m MOLA areoid); HiRISE and CTX layers
+  toggle with live attribution; 3D terrain displaces from the committed heightmap; no fabricated
+  elevation. Verified in browser with zero console errors. *(done 2026-11-14)*
 
 ## PHASE 4 — Terrain analysis & routing (Modules E + F)
 - [ ] Slope/difficulty grids + hazard overlay (documented thresholds)

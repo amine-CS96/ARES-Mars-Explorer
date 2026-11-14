@@ -37,16 +37,20 @@ from this environment (kept only if another verified source requires it).
 | `THEMIS_NightIR_ControlledMosaics_100m_v2_oct2018` | THEMIS-IR Night Global Mosaic | Odyssey / THEMIS | 100 m/px | png | ✅ 200 |
 | `mola_roughness` | MGS MOLA, Global Surface Roughness | MGS / MOLA | ~463 m/px | png | ✅ 200 |
 
-Also catalogued (useful later): THEMIS Day IR 100 m (`THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018`),
-TES thermal inertia (`TES_Thermal_Inertia`), TES albedo, MOC Atlas, **Jezero HiRISE 25 cm
-controlled mosaic** (`JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd`, 🟡),
-**Jezero CTX 6 m controlled mosaic** (`JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0`, 🟡),
-Jezero preliminary CTX (`Jezero_CTX_BlockAdj_dd`, 🟡), HiRISE "Ares 3 site" mosaic
-(`ESP_040776_2115_RED_A_01_ORTHO`, 🟡 — real image of the fictional site's terrain).
+### Verified regional layers — Jezero (live tile check 2026-11-14)
 
-> Regional layers 404 at global zoom levels (no coverage there). Their tile matrix/zoom range
-> must come from each layer's `GetCapabilities` — this is Trek's own documented procedure.
-> Do not hardcode regional tile URLs before that check (planned Phase 3).
+GetCapabilities parsed and individual tiles requested live. Both use the same `default028mm`
+matrix set as global layers; tiles 404 outside the product bbox.
+
+| Layer ID | Title | Mission/Instrument | Res. | Ext. | Zoom range | WGS84 bbox | Check |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd` | Jezero HiRISE 25 cm Orthomosaic | MRO / HiRISE | 0.25 m/px | png | 14–17 | 77.2229°E–77.5840°E, 18.3068°N–18.6693°N | ✅ 200 |
+| `JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0` | Jezero CTX 6 m Orthomosaic | MRO / CTX | 6 m/px | png | 8–13 | (no WGS84 bbox in Capabilities; uses USGS DTM bbox 77.1605°E–77.699°E, 18.211°N–18.7212°N as conservative proxy) | ✅ 200 |
+
+Also catalogued (useful later): THEMIS Day IR 100 m (`THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018`),
+TES thermal inertia (`TES_Thermal_Inertia`), TES albedo, MOC Atlas, Jezero preliminary CTX
+(`Jezero_CTX_BlockAdj_dd`, 🟡), HiRISE "Ares 3 site" mosaic
+(`ESP_040776_2115_RED_A_01_ORTHO`, 🟡 — real image of the fictional site's terrain).
 
 ## 2. MMGIS Perseverance waypoints — ✅ VERIFIED
 
@@ -54,6 +58,7 @@ Jezero preliminary CTX (`Jezero_CTX_BlockAdj_dd`, 🟡), HiRISE "Ares 3 site" mo
 - **Provider:** NASA/JPL-Caltech, Mars 2020 "Where is Perseverance?" (MMGIS)
 - **Content:** rover end-of-drive positions (waypoints) — used for the rover-track layer (C4)
   and to ground-truth Jezero POI coordinates.
+- **Committed snapshot:** `public/data/M20_waypoints.json` (589 kB GeoJSON FeatureCollection).
 - **Kind:** static JSON snapshot at fetch time.
 
 ## 3. Reference data (numbers, coordinates)
@@ -69,13 +74,31 @@ Jezero preliminary CTX (`Jezero_CTX_BlockAdj_dd`, 🟡), HiRISE "Ares 3 site" mo
 | HiRISE — https://hirise.lpl.arizona.edu/ | HiRISE imagery portal | ❌ unreachable from this env; not cited in data until reachable |
 | science.nasa.gov/mars | general Mars science | ❌ unreachable; **not used** |
 
-## 4. Elevation data (Phase 3) — ⏳ PLANNED, no fabrication
+## 4. Elevation data — ✅ VERIFIED (Jezero CTX 20 m DTM)
 
-- Trek serves *rendered* tiles, not raw DEMs. Raw elevation for Jezero will come from USGS PDS
-  products (e.g. the Mars 2020 CTX/HiRISE DTMs catalogued via ODE) processed by our Node
-  pipeline (`geotiff.js` + `sharp`) into heightmap PNGs + slope grids, cached under `public/data/`.
-- Until a real DEM is processed, no elevation-based feature ships — or it ships explicitly
-  labeled `SIMULATED` with a synthetic test grid. No exceptions.
+- **Product:** Mars 2020 Terrain Relative Navigation CTX DTM Mosaic
+- **Direct download (✅ 200, 9.2 MB):**
+  `https://planetarymaps.usgs.gov/mosaic/mars2020_trn/CTX/JEZ_ctx_B_soc_008_DTM_MOLAtopography_DeltaGeoid_20m_Eqc_latTs0_lon0.tif`
+  (redirects to `asc-pds-services.s3.us-west-2.amazonaws.com`; fetched with `curl -L`).
+- **Provider:** USGS Astrogeology Science Center
+- **Citation:** Fergason, R. L., Hare, T. M., Mayer, D. P., Galuszka, D. M., Redding, B. L.,
+  Smith, E. D., Shinaman, J. R., Cheng, Y., Otero, R. E., 2020
+- **DOI:** https://doi.org/10.5066/P906QQT8
+- **Resolution:** 20 m/px; 1596 × 1512 pixels; equirectangular (latTs=0); vertical reference is
+  MOLA areoid.
+- **Pipeline:** Node script `scripts/build-jezero-terrain.mjs` (`geotiff.js` + `sharp`) reads the
+  GeoTIFF and writes:
+  - `public/data/jezero_heightmap_rg16.png` — 8-bit RGB PNG with 16-bit elevation packed into
+    R (low byte) + G (high byte); B unused. Range −2710.70 m to −1515.54 m; round-trip error
+    < 0.01 m against source.
+  - `public/data/jezero_slope_degrees.png` — 8-bit grayscale slope (degrees / 90 × 255).
+  - `public/data/jezero_metadata.json` — source, bbox, encoding, slope thresholds.
+- **Higher-res option identified (not used due to size):** Mars 2020 TRN HiRISE DTM Mosaic,
+  1 m/px, 1.75 GB GeoTIFF at
+  `https://planetarymaps.usgs.gov/mosaic/mars2020_trn/HiRISE/JEZ_hirise_soc_006_DTM_MOLAtopography_DeltaGeoid_1m_Eqc_latTs0_lon0_blend40.tif`.
+
+> Trek serves *rendered* tiles, not raw DEMs. All elevation values in Module C come from the
+> verified USGS CTX DTM above; none are fabricated.
 
 ## 5. Attribution text (shown in-app)
 

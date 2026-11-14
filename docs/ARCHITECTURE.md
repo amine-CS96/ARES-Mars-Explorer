@@ -59,7 +59,16 @@ src/
 │   │   ├── math.ts             PURE: projection, tile pyramid, tiers, graticule, 3D colors
 │   │   └── scene/              MarsScene, MarsGlobeMesh, AtmosphereShell, GraticuleMesh,
 │   │                           PoiMarkers (imports three; the only three-touching UI layer)
-│   ├── mars-explorer/          Phase 3
+│   ├── mars-explorer/          Jezero surface explorer (live since Phase 3)
+│   │   ├── ExplorerPage.tsx    2D/3D orchestration, layer manager, cursor readout
+│   │   ├── TileMap.tsx         2D slippy-map canvas (pan/zoom, wheel as active listener)
+│   │   ├── TerrainScene.tsx    3D displaced terrain (custom RG heightmap shader)
+│   │   ├── ExplorerHud.tsx     layer/view toggles, attribution, elevation/slope readout
+│   │   ├── regionConfig.ts     Jezero bbox, layers, DEM + rover-track paths
+│   │   ├── useTileMosaic.ts    viewport tile compositor + TanStack Query cache
+│   │   ├── elevationSampler.ts cursor elevation/slope lookup from pipeline PNGs
+│   │   ├── roverTrack.ts       MMGIS waypoint parser
+│   │   └── useRoverTrack.ts    TanStack Query wrapper for the snapshot
 │   ├── points-of-interest/     Atlas: search/filter/detail (live since Phase 1)
 │   ├── hazard-analysis/        Phase 4
 │   ├── route-planner/          Phase 4
@@ -75,15 +84,30 @@ src/
 ├── data/                       places.ts, datasets.ts, planetaryFacts.ts, program.ts
 ├── utils/                      cn.ts, geo.ts, format.ts
 ├── styles/globals.css          Tailwind v4 @theme tokens + base/components
-└── main.tsx
+├── main.tsx
+└── scripts/                    dev-time data pipelines
+    └── build-jezero-terrain.mjs   Node geotiff.js + sharp DEM → heightmap/slope/metadata
+
+public/data/                    committed pipeline outputs + snapshots
+├── jezero_ctx_dem_20m.tif      source USGS CTX DTM (committed for reproducibility)
+├── jezero_heightmap_rg16.png   RG-encoded 16-bit elevation heightmap
+├── jezero_slope_degrees.png    8-bit grayscale slope grid
+├── jezero_metadata.json        source, bbox, encoding, thresholds
+└── M20_waypoints.json          MMGIS Perseverance waypoint snapshot
 ```
 
 ## 3. Data flow examples
 
-**Tiles → pixels (Phase 2, live):** feature → `services/nasa/marsTrekProvider.buildTrekTileUrl()`
-→ TanStack Query composites verified tiles onto a canvas (`features/globe/composeMosaic.ts`,
-D-011) → R3F `CanvasTexture` → renderer; attribution rendered with the layer descriptor in the
-globe HUD. Regional tiles (Phase 3) follow the same path once GetCapabilities are parsed.
+**Tiles → pixels (Phase 2/3, live):** feature → `services/nasa/marsTrekProvider.buildTrekTileUrl()`
+→ TanStack Query composites verified tiles onto a canvas (`features/globe/composeMosaic.ts` for
+the globe; `features/mars-explorer/useTileMosaic.ts` for regional viewport maps, D-011) → R3F
+`CanvasTexture` or 2D canvas → renderer; attribution rendered with the layer descriptor in the HUD.
+Regional layers include per-layer min/max zoom and bbox parsed from GetCapabilities.
+
+**DEM → heightmap/slope (Phase 3, live):** USGS GeoTIFF → Node script
+`scripts/build-jezero-terrain.mjs` (`geotiff.js` + `sharp`) → `public/data/` RG-encoded heightmap,
+grayscale slope PNG and metadata JSON → `TerrainSampler` for cursor readout and R3F custom shader
+for 3D displacement.
 
 **Catalog → UI (Phase 1, live):** `data/places.ts` (zod-validated) → `features/points-of-interest`
 components → Atlas page/dashboard. No runtime fabrication.

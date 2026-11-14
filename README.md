@@ -8,10 +8,10 @@ It combines real NASA/ESA/USGS planetary data, interactive 3D visualization, ter
 analysis, safe route planning (A* over terrain cost), and a Marswalk mission simulator with an
 explicit, documented scientific basis.
 
-**Status:** Phase 2 of 6 — professional foundation plus the **live 3D Mars globe** (Three.js
-planet textured from verified NASA Trek tiles, markers, quality tiers, honest fallbacks), on
-top of the Phase 1 design system, dashboard, points-of-interest atlas and data-source registry.
-See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the live state of development.
+**Status:** Phase 3 of 6 — professional foundation, live 3D Mars globe, and the **Jezero
+Crater surface explorer** (regional HiRISE/CTX tiles, Node DEM pipeline to heightmap + slope
+grid, 2D/3D terrain views with cursor elevation/slope readout, rover-track overlay). See
+[`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the live state of development.
 
 ---
 
@@ -21,7 +21,7 @@ See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the live state of development.
 | --- | --- | --- |
 | **Mission Dashboard** | Mission control overview: planetary statistics, featured sites, data-source status | 1 ✓ |
 | **Interactive Mars Globe** | Real-texture 3D globe (Three.js), markers, atmosphere, quality tiers | 2 ✓ |
-| **Surface Explorer** | Jezero Crater in 2D/3D: imagery, elevation, layers, terrain panels | 3 |
+| **Surface Explorer** | Jezero Crater in 2D/3D: imagery, elevation, layers, terrain panels | 3 ✓ |
 | **Points of Interest** | Searchable, source-cited collection of Martian exploration sites | 1 ✓ (data live) |
 | **Hazard Analysis** | Slope/roughness-based terrain difficulty with documented criteria | 4 |
 | **Route Planner** | A* pathfinding over terrain-cost grid; route comparison + profiles | 4 |
@@ -67,8 +67,10 @@ This project maintains a permanent documentation system for humans and AI sessio
 
 ## Data (verified live during development)
 
-- NASA **Mars Trek WMTS** tiles — MOLA color hillshade, Viking MDIM 2.1, HRSC blend, THEMIS IR
-  (`https://trek.nasa.gov/tiles/Mars/EQ/...`, verified HTTP 200)
+- NASA **Mars Trek WMTS** tiles — global + regional (MOLA, Viking, HRSC, THEMIS, Jezero HiRISE
+  25 cm, Jezero CTX 6 m; `https://trek.nasa.gov/tiles/Mars/EQ/...`, verified HTTP 200)
+- USGS **Mars 2020 TRN CTX DTM Mosaic** — Jezero 20 m elevation (processed into committed
+  heightmap + slope PNGs via Node `geotiff.js` + `sharp`)
 - NASA/JPL **MMGIS** Perseverance waypoint feed (`M20_waypoints.json`, verified HTTP 200)
 - NASA **NSSDCA Mars fact sheet** for planetary statistics
 - USGS **Gazetteer of Planetary Nomenclature** for feature coordinates
