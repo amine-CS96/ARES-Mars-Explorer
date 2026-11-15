@@ -2,6 +2,51 @@
 
 All notable changes to ARES — Mars Mission Explorer.
 
+## Phase 6.2 — Production (Vercel) DEM loading fix (2026-11-15)
+
+### Root cause
+
+`public/data/` was in `.gitignore`, so the DEM assets required at runtime
+(`/data/jezero_metadata.json`, `/data/jezero_heightmap_rg16.png`,
+`/data/jezero_slope_degrees.png`, `/data/M20_waypoints.json`) were never committed. Vercel
+builds from GitHub, so production returned **HTTP 404** for all of them — `/hazards` and
+`/planner` showed "Terrain grid failed to load." The Vite build does not run the terrain
+pipeline, and Vite does not publish arbitrary files from `source-data/`, so nothing regenerated
+them on Vercel. A second, independent production bug was found during verification: deep links
+to client-side routes (`/hazards`, `/planner`, …) returned Vercel 404s because the deployment
+had no SPA fallback rewrite.
+
+### Fix
+
+- `.gitignore` no longer ignores `public/data/`; the four assets are committed. Provenance
+  verified: regenerating from the tracked `source-data/jezero_ctx_dem_20m.tif` reproduces the
+  PNGs **byte-identically** (matching SHA-256).
+- `vercel.json` added with an SPA rewrite (`/(.*) → /index.html`); Vercel checks the filesystem
+  first, so `/data/*` assets are unaffected.
+- `npm run terrain:build` script added for regeneration discoverability.
+
+### Loader hardening (no scientific changes)
+
+- `loadTerrainGrid` now validates HTTP status, content type, JSON shape (`parseElevationMetadata`)
+  and cross-checks decoded raster dimensions against the metadata's declared product size.
+- `elevationSampler.ts` and `ExplorerPage.tsx` reuse the same metadata validation.
+- New shared `TerrainLoadError` component: short user-facing message with full diagnostics kept
+  in the console.
+- Regression tests for `parseElevationMetadata` (HTML payload, inverted range, invalid bbox).
+
+### Verification (production, https://ares-mars-explorer.vercel.app)
+
+- All four `/data/*` assets: HTTP 200, correct content types, length-identical, PNG signature
+  `89 50 4E 47 0D 0A 1A 0A` verified on both rasters; waypoints JSON parses (708 features).
+- `/hazards`: zero console errors, full real analysis (40 clusters, 961 critical, 7.0 km²,
+  99.7% coverage), all four DEM requests 200 in the network log.
+- `/planner`: sample route computed on the real DEM — 2.82 km, 919.0 kJ, max slope 12.3°
+  (identical to locally verified values); route drawn over CTX imagery.
+- Roundtrip: `/hazards` Route tab shows 2.87 km exposure from the Planner route (matches within
+  known segment rounding), 0 cluster intersections.
+- `/explorer`, `/simulator`, `/globe`, `/atlas`, `/data-sources`: load with zero console errors.
+- Gates: typecheck ✓ · lint ✓ · Vitest 109/109 ✓ · build ✓ · Playwright 42 passed / 2 skipped ✓.
+
 ## Phase 6.1 — Hazards workspace redesign & route-handoff fixes (2026-11-15)
 
 ### Redesigned Hazards into a professional GIS-style hazard-intelligence workspace

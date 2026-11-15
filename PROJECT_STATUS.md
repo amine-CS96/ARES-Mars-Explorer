@@ -3,7 +3,7 @@
 > Live state of development. Update after every significant phase.
 > **Current phase: PHASE 6 — Polish & demo (COMPLETE, verified). ARES is a shipped public product.**
 
-Last updated: 2026-11-15 (Hazards workspace redesign + route-handoff fixes verified)
+Last updated: 2026-11-15 (Production Vercel DEM loading fixed & verified live)
 
 ---
 
@@ -16,7 +16,7 @@ Last updated: 2026-11-15 (Hazards workspace redesign + route-handoff fixes verif
 | Tests | Vitest — **105/105 passing** (geo, catalog integrity, globe math, Button, AtlasPage, GlobeFallback, slopeClass, costModel, A*, Mars24, oxygen model, hazards terrain analysis, risk model, hazard detection, route exposure + pathGrid regression, profile accessibility, export builders) · Playwright E2E — **42 passed / 2 skipped** (desktop + mobile projects; incl. hazards flows and 4-viewport reference screenshots in `e2e/screenshots/`) |
 | Lint | `eslint .` — **PASSING** (0 errors, 0 warnings) |
 | Typecheck | `tsc -b` strict — **PASSING** |
-| Browser verification | **PASSING** — full public workflow verified: dashboard → globe → explorer → hazards → planner → simulator, with cross-module links, sample route, and zero console errors. Hazards redesign verified live: cluster select → explainable inspector (real ramp × weight contributions, verified POI distances), inventory filters/sort/search, analytics chart-click → map highlight + clear, assessment distributions, methodology dialog, JSON/CSV export with real data, profile switch (Standard 40 clusters/961 critical → Capable 2 clusters/0 critical/77 high), cursor tooltip, Perseverance traverse toggle. Route handoff verified end-to-end: Planner sample route persists `{path, gridWidth:256, gridHeight:243}` without pressing Send; Hazards exposure 2.87 km (Planner 2.82 km), overlay drawn at correct position, 100% low severity, 0 cluster intersections; Send to Simulator imports with planner energy 919 kJ. |
+| Browser verification | **PASSING** — full public workflow verified: dashboard → globe → explorer → hazards → planner → simulator, with cross-module links, sample route, and zero console errors. **Production (Vercel) verified 2026-11-15**: all four `/data/*` DEM assets HTTP 200; `/hazards` full real analysis (40 clusters / 961 critical / 7.0 km² / 99.7% coverage) with zero console errors; `/planner` sample route 2.82 km / 919 kJ on the real DEM; `/hazards` Route tab shows 2.87 km exposure from the Planner route; all other routes load clean. |
 | Dependencies | + three 0.187 / @react-three/fiber 9.8 / @react-three/drei 10.7 (Phase 2, lazy) · + geotiff 3.0.5 + sharp 0.35.5 (Phase 3 dev-time pipeline) · + recharts 2.x (Phase 4) |
 | Network verification | Trek WMTS tiles ✓ (6 global + 2 regional layer IDs + CORS `*`), MMGIS waypoints ✓, USGS planetarymaps DEM ✓, NSSDCA ✓, USGS Gazetteer ✓, ODE ✓, api.nasa.gov ✓, GISS Mars24 ✓, Perseverance raw-images RSS feed ✓ |
 
