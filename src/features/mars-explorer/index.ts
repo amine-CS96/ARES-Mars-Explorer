@@ -5,6 +5,7 @@ export { TerrainScene } from './TerrainScene'
 export { useTileMosaic, composeTileMosaic } from './useTileMosaic'
 export { buildHazardOverlay } from './HazardOverlay'
 export { TerrainSampler, type TerrainSample } from './elevationSampler'
+export { TerrainLoadError } from './components/TerrainLoadError'
 export { useRoverTrack } from './useRoverTrack'
 export type { RoverWaypoint, RoverTrack } from './roverTrack'
 export {

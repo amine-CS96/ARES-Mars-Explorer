@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle,
   ChartColumn,
   ClipboardList,
   Map as MapIcon,
@@ -16,6 +15,7 @@ import {
   latLonToPixel,
   useTileMosaic,
   useRoverTrack,
+  TerrainLoadError,
 } from '@/features/mars-explorer'
 import {
   getVerifiedLayer,
@@ -543,10 +543,7 @@ export function HazardsPage() {
               Loading terrain grid…
             </div>
           ) : terrainQuery.error ? (
-            <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-danger">
-              <AlertTriangle className="size-6" aria-hidden="true" />
-              <span className="font-mono text-xs">Terrain grid failed to load.</span>
-            </div>
+            <TerrainLoadError error={terrainQuery.error} />
           ) : (
             <>
               <MapCanvas
@@ -686,7 +683,7 @@ export function HazardsPage() {
                       text={
                         terrainQuery.isLoading
                           ? 'Loading terrain grid…'
-                          : 'Terrain grid could not be loaded.'
+                          : 'Terrain grid could not be loaded — see the map panel for details.'
                       }
                     />
                   )

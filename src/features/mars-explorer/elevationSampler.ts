@@ -6,6 +6,8 @@
  * pixel/255 * 90 = slope in degrees.
  */
 
+import { parseElevationMetadata } from '@/engines/terrain/terrainGrid'
+
 export interface TerrainSample {
   elevationMeters: number
   slopeDegrees: number
@@ -44,8 +46,16 @@ export class TerrainSampler {
     if (this.loaded || this.error) return
     try {
       const metaRes = await fetch(this.metadataUrl)
-      if (!metaRes.ok) throw new Error(`Metadata fetch failed: ${metaRes.status}`)
-      this.metadata = (await metaRes.json()) as ElevationMetadata
+      if (!metaRes.ok) {
+        throw new Error(`DEM metadata request failed: HTTP ${metaRes.status}`)
+      }
+      const contentType = metaRes.headers.get('content-type') ?? ''
+      if (!contentType.includes('json')) {
+        throw new Error(
+          `DEM metadata returned unexpected content type "${contentType}" (expected JSON)`,
+        )
+      }
+      this.metadata = parseElevationMetadata(await metaRes.json())
 
       const [heightmap, slopemap] = await Promise.all([
         loadImage(this.heightmapUrl),

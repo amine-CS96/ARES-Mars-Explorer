@@ -17,6 +17,7 @@ import {
   VERIFIED_REGIONAL_LAYERS,
 } from '@/services/nasa/marsTrekProvider'
 import type { TrekLayer } from '@/services/nasa/types'
+import { parseElevationMetadata } from '@/engines/terrain/terrainGrid'
 import type { LatLon } from '@/types/geo'
 import { places } from '@/data/places'
 import { useRoverTrack } from './useRoverTrack'
@@ -160,8 +161,16 @@ export function ExplorerPage() {
     queryKey: ['dem-metadata', config.dem.metadataPath],
     queryFn: async ({ signal }) => {
       const response = await fetch(config.dem.metadataPath, { signal })
-      if (!response.ok) throw new Error(`DEM metadata fetch failed: ${response.status}`)
-      return response.json()
+      if (!response.ok) {
+        throw new Error(`DEM metadata request failed: HTTP ${response.status}`)
+      }
+      const contentType = response.headers.get('content-type') ?? ''
+      if (!contentType.includes('json')) {
+        throw new Error(
+          `DEM metadata returned unexpected content type "${contentType}" (expected JSON)`,
+        )
+      }
+      return parseElevationMetadata(await response.json())
     },
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,

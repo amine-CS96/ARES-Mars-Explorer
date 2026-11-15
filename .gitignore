@@ -10,10 +10,10 @@ coverage/
 *.tsbuildinfo
 .vite/
 
-# Data pipeline caches and generated scientific assets
+# Data pipeline caches. The generated DEM assets in public/data/ are NOT ignored:
+# they are required runtime assets (e.g. /data/jezero_heightmap_rg16.png) for the
+# deployed static app, regenerated from source-data/ by scripts/build-jezero-terrain.mjs.
 .cache/
-public/data/
-!public/data/.gitkeep
 
 # Environment
 .env

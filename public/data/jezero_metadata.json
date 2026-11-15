@@ -1,0 +1,67 @@
+{
+  "region": "Jezero Crater (Mars 2020 landing site)",
+  "product": {
+    "label": "Mars 2020 Terrain Relative Navigation CTX DTM Mosaic",
+    "resolutionMeters": 20,
+    "bitDepth": 32,
+    "bands": 1,
+    "width": 1596,
+    "height": 1512,
+    "projection": "Equirectangular (Eqc_latTs0_lon0)",
+    "planetocentric": true,
+    "longitudeDirection": "Positive East",
+    "longitudeDomain": "-180 to 180"
+  },
+  "elevation": {
+    "minMeters": -2710.6958,
+    "maxMeters": -1515.5396,
+    "units": "meters relative to MOLA areoid",
+    "kind": "measured",
+    "sourceUrl": "https://planetarymaps.usgs.gov/mosaic/mars2020_trn/CTX/JEZ_ctx_B_soc_008_DTM_MOLAtopography_DeltaGeoid_20m_Eqc_latTs0_lon0.tif",
+    "sourceLabel": "USGS Astrogeology Science Center — Mars 2020 TRN CTX DTM Mosaic",
+    "citation": "Fergason, R. L., Hare, T. M., Mayer, D. P., Galuszka, D. M., Redding, B. L., Smith, E. D., Shinaman, J. R., Cheng, Y., Otero, R. E., 2020",
+    "doi": "https://doi.org/10.5066/P906QQT8"
+  },
+  "bbox": {
+    "west": 77.160465,
+    "east": 77.698975,
+    "south": 18.211027,
+    "north": 18.721194,
+    "derivedFrom": "projected bounding box divided by Mars radius 3396190 m (equirectangular latTs=0)",
+    "coordinateAccuracy": "approximate"
+  },
+  "heightmapEncoding": {
+    "format": "RGB8 PNG (R+G encode elevation)",
+    "rChannel": "low 8 bits of uint16 normalized elevation",
+    "gChannel": "high 8 bits of uint16 normalized elevation",
+    "bChannel": "unused (set to 0)",
+    "unpack": "uint16 = R + G * 256; elevation = minMeters + uint16 / 65535 * (maxMeters - minMeters)",
+    "precisionMeters": 0.0182,
+    "path": "jezero_heightmap_rg16.png"
+  },
+  "slopeEncoding": {
+    "format": "L8 PNG",
+    "units": "degrees / 90 * 255",
+    "decode": "slopeDeg = pixel / 255 * 90",
+    "path": "jezero_slope_degrees.png",
+    "thresholds": {
+      "flat": {
+        "maxDeg": 5,
+        "label": "Flat to gently sloping"
+      },
+      "moderate": {
+        "maxDeg": 15,
+        "label": "Moderate slope"
+      },
+      "steep": {
+        "maxDeg": 25,
+        "label": "Steep slope"
+      },
+      "hazardous": {
+        "maxDeg": 90,
+        "label": "Hazardous / impassable"
+      }
+    }
+  },
+  "generatedAt": "2026-11-15T09:19:14.755Z"
+}

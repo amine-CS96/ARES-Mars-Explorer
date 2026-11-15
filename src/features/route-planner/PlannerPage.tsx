@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, MapPinned, RotateCcw, Send } from 'lucide-react'
+import { MapPinned, RotateCcw, Send } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { JEZERO_CONFIG } from '@/features/mars-explorer'
+import {
+  JEZERO_CONFIG,
+  TerrainLoadError,
+} from '@/features/mars-explorer'
 import { useTerrainGrid } from '@/hooks/useTerrainGrid'
 import { formatLatLon } from '@/utils/geo'
 import { SLOPE_CLASS_COLORS, slopeClass } from '@/engines/terrain/slopeClass'
@@ -238,10 +241,7 @@ export function PlannerPage() {
               Loading terrain grid…
             </div>
           ) : terrainQuery.error ? (
-            <div className="flex h-full items-center justify-center gap-2 px-6 text-center text-danger">
-              <AlertTriangle className="size-5" aria-hidden="true" />
-              <span className="font-mono text-xs">Terrain grid failed to load.</span>
-            </div>
+            <TerrainLoadError error={terrainQuery.error} />
           ) : (
             <RouteMap
               center={center}

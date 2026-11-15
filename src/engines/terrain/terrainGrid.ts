@@ -46,6 +46,7 @@ export interface TerrainGridSource {
 interface ElevationMetadata {
   elevation: { minMeters: number; maxMeters: number; kind: string }
   bbox: TerrainGridBBox
+  product?: { width?: number; height?: number }
 }
 
 export interface GridExtent {
@@ -91,13 +92,70 @@ export function sampleSlope(grid: TerrainGrid, point: LatLon): number | null {
   return grid.slope[idx.y * grid.width + idx.x]
 }
 
+/**
+ * Validate parsed DEM metadata. Guards against the deployment serving HTML (e.g. a 404 page
+ * caught by an SPA rewrite) or truncated JSON, which previously surfaced as cryptic
+ * "Unexpected token" errors. Throws descriptive errors instead.
+ */
+export function parseElevationMetadata(raw: unknown): ElevationMetadata {
+  const meta = raw as ElevationMetadata | null
+  if (!meta || typeof meta !== 'object') {
+    throw new Error('DEM metadata is not a JSON object (the server may have returned HTML)')
+  }
+  const { elevation, bbox } = meta
+  if (
+    !elevation ||
+    !Number.isFinite(elevation.minMeters) ||
+    !Number.isFinite(elevation.maxMeters) ||
+    elevation.minMeters >= elevation.maxMeters
+  ) {
+    throw new Error('DEM metadata has invalid elevation range (min/max missing or inverted)')
+  }
+  if (
+    !bbox ||
+    ![bbox.west, bbox.south, bbox.east, bbox.north].every(Number.isFinite) ||
+    bbox.west >= bbox.east ||
+    bbox.south >= bbox.north
+  ) {
+    throw new Error('DEM metadata has an invalid geographic bbox')
+  }
+  return meta
+}
+
+async function fetchElevationMetadata(url: string): Promise<ElevationMetadata> {
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`DEM metadata request failed: HTTP ${res.status} for ${url}`)
+  }
+  const contentType = res.headers.get('content-type') ?? ''
+  if (!contentType.includes('json')) {
+    throw new Error(
+      `DEM metadata returned unexpected content type "${contentType}" for ${url} (expected JSON)`,
+    )
+  }
+  let raw: unknown
+  try {
+    raw = await res.json()
+  } catch {
+    throw new Error(`DEM metadata is not valid JSON for ${url}`)
+  }
+  return parseElevationMetadata(raw)
+}
+
 /** Load an image and return an HTMLImageElement. */
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+    img.onload = () => {
+      if (img.width === 0 || img.height === 0) {
+        reject(new Error(`Image decoded with zero dimensions: ${src}`))
+        return
+      }
+      resolve(img)
+    }
+    img.onerror = () =>
+      reject(new Error(`Failed to load DEM raster image (check HTTP status / file presence): ${src}`))
     img.src = src
   })
 }
@@ -154,13 +212,31 @@ function computeMetersPerPixel(grid: TerrainGrid): number {
 /** Load a complete terrain grid from the committed pipeline outputs. */
 export async function loadTerrainGrid(source: TerrainGridSource): Promise<TerrainGrid> {
   const [metadata, heightmapImage, slopeImage] = await Promise.all([
-    fetch(source.metadataUrl).then(async (res) => {
-      if (!res.ok) throw new Error(`Metadata fetch failed: ${res.status}`)
-      return res.json() as Promise<ElevationMetadata>
-    }),
+    fetchElevationMetadata(source.metadataUrl),
     loadImage(source.heightmapUrl),
     loadImage(source.slopeUrl),
   ])
+
+  // Cross-check the decoded rasters against each other and against the metadata's declared
+  // product dimensions, so a truncated/corrupt asset fails loudly instead of producing a
+  // silently wrong grid.
+  const expectedW = metadata.product?.width
+  const expectedH = metadata.product?.height
+  if (expectedW != null && heightmapImage.width !== expectedW) {
+    throw new Error(
+      `Heightmap width ${heightmapImage.width} does not match metadata product width ${expectedW}`,
+    )
+  }
+  if (expectedH != null && heightmapImage.height !== expectedH) {
+    throw new Error(
+      `Heightmap height ${heightmapImage.height} does not match metadata product height ${expectedH}`,
+    )
+  }
+  if (heightmapImage.width !== slopeImage.width || heightmapImage.height !== slopeImage.height) {
+    throw new Error(
+      `Heightmap dimensions ${heightmapImage.width}×${heightmapImage.height} do not match slope map ${slopeImage.width}×${slopeImage.height}`,
+    )
+  }
 
   const elevation = decodeElevationGrid(
     heightmapImage,
@@ -168,10 +244,6 @@ export async function loadTerrainGrid(source: TerrainGridSource): Promise<Terrai
     metadata.elevation.maxMeters,
   )
   const slope = decodeSlopeGrid(slopeImage)
-
-  if (elevation.width !== slopeImage.width || elevation.height !== slopeImage.height) {
-    throw new Error('Heightmap and slope map dimensions must match')
-  }
 
   let minElevation = Number.POSITIVE_INFINITY
   let maxElevation = Number.NEGATIVE_INFINITY
