@@ -100,14 +100,59 @@ TES thermal inertia (`TES_Thermal_Inertia`), TES albedo, MOC Atlas, Jezero preli
 > Trek serves *rendered* tiles, not raw DEMs. All elevation values in Module C come from the
 > verified USGS CTX DTM above; none are fabricated.
 
-## 5. Attribution text (shown in-app)
+## 5. Phase 4 — additional resources investigated 2026-11-14
+
+### 5.1 USGS-NASA Planetary Geologic Mapping — ⚠️ portal + static downloads only
+
+- **Portal:** https://astrogeology-usgs.hub.arcgis.com/ (✅ 200)
+- **Interactive maps page:** https://astrogeology-usgs.hub.arcgis.com/pages/interactive-maps-mars (✅ 200)
+- **Global Mars geologic map page:** https://astrogeology.usgs.gov/search/map/mars_geologic_map (✅ 200)
+- **Download products:** PDF (`mars-geologic-map.pdf`, 6.79 MB) and `full.jpg` offered from the
+  Astropedia record; source citation: USGS Astrogeology Science Center.
+- **Public ArcGIS REST / tile service:** **not found.** Probed `https://astrogeology.usgs.gov/arcgis/rest/services`
+  and variant paths → 404. ArcGIS Hub search API for `q=Mars` returned `numberMatched: 0`.
+- **Status:** `portal` — useful as a cited reference and outbound link; not a live map service
+  ARES can consume directly. Any future geologic overlay must be a manually georeferenced static
+  image, clearly labeled with vintage and provenance.
+
+### 5.2 NASA Worldview / GIBS — ❌ no Mars layers
+
+- **Portal:** https://worldview.earthdata.nasa.gov/ (✅ 200)
+- **WMTS GetCapabilities:** `https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetCapabilities` (✅ 200, 5.3 MB XML)
+- **Mars layers:** **0** matches for `mars|Mars|MARS` in the capabilities document.
+- **Conclusion:** GIBS is Earth-only. ARES continues to use NASA Mars Trek WMTS for all Mars
+  raster layers (D-011).
+
+### 5.3 Mars Perseverance Raw Images Gallery — 🟡 official API down; alternative feed verified
+
+- **Gallery:** https://mars.nasa.gov/mars2020/multimedia/raw-images/ (✅ 200)
+- **Official public API:** `https://api.nasa.gov/mars-photos/api/v1/...` (❌ 404 "No such app" —
+  Heroku backend missing as of 2026-11-14).
+- **Reverse-engineered JSON feed** (discovered in the gallery's JS bundle, verified live):
+  ```
+  https://mars.nasa.gov/rss/api/?feed=raw_images&category=mars2020,ingenuity&feedtype=json&ver=1.2&num={n}&page={p}&order=sol+desc&extended=sample_type::full
+  ```
+  (✅ 200, `Content-Type: application/json;charset=UTF-8`, `Access-Control-Allow-Origin: *`)
+- **Observed payload fields:** `imageid`, `sol`, `camera.instrument`, `date_taken_utc`, `caption`,
+  `image_files.{small,medium,large,full_res}`, `credit`.
+- **Image CDN:** `https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/{SOL}/ids/edr/browse/{CAM}/{FILENAME}_{size}.jpg`
+  (✅ 200; no CORS headers — use `<img>`, not canvas/WebGL).
+- **Provider / credit:** NASA/JPL-Caltech/MSSS.
+- **Status:** `available-unofficial` — the feed is not a documented public API, but it is
+  discoverable from the official gallery, returns valid JSON, and allows cross-origin requests.
+  ARES may consume it for a raw-images panel with explicit "unofficial endpoint" labeling and a
+  graceful failure path.
+- **Limitation:** the feed contains no latitude/longitude per image, so thumbnails cannot be
+  accurately placed on the map without a separate verified camera-geometry source.
+
+## 6. Attribution text (shown in-app)
 
 > Imagery and elevation: NASA/JPL-Caltech, NASA/USGS Astrogeology, NASA/GSFC (MOLA),
 > NASA/JPL/ASU (THEMIS), NASA/JPL/MSSS (CTX), NASA/JPL/University of Arizona (HiRISE),
-> ESA/DLR/FU Berlin (Mars Express HRSC). Waypoints: NASA/JPL MMGIS.
+> ESA/DLR/FU Berlin (Mars Express HRSC). Rover waypoints and raw images: NASA/JPL-Caltech/MSSS.
 > ARES is an independent educational project, not affiliated with NASA.
 
-## 6. Credits & references studied
+## 7. Credits & references studied
 
 - **Sol Atlas** (The SOL Explorers, Apache-2.0) — studied for architecture/data/science ideas;
   no code copied; its README's verification notes inspired our endpoint checks.

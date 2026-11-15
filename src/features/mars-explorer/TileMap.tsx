@@ -2,14 +2,28 @@ import { useEffect, useRef, useState } from 'react'
 import { tileGridForZoom } from '@/services/nasa/marsTrekProvider'
 import type { useTileMosaic } from './useTileMosaic'
 import type { RegionConfig } from './regionConfig'
+import {
+  clampCenter,
+  latLonToPixel,
+  pixelToLatLon,
+  TILE_SIZE,
+  type ViewportSize,
+} from './viewport'
 
 /**
  * 2D slippy-map canvas for a regional WMTS layer. Computes visible tiles from the current
  * center/zoom, composites them via the supplied mosaic hook, and draws the result into a
  * viewport-sized canvas. Pan and zoom are pointer/wheel driven.
+ *
+ * Optional overlays (e.g. a hazard raster) are drawn after the tiles using their geographic bbox.
+ * Optional onClick reports the lat/lon of a single click (not a drag).
  */
 
-const TILE_SIZE = 256
+export interface MapOverlay {
+  canvas: HTMLCanvasElement
+  bbox: { west: number; south: number; east: number; north: number }
+  opacity?: number
+}
 
 interface TileMapProps {
   config: RegionConfig
@@ -17,8 +31,10 @@ interface TileMapProps {
   center: { lat: number; lon: number }
   onCenterChange: (center: { lat: number; lon: number }) => void
   onZoomChange: (zoom: number) => void
-  onCursor: (point: { lat: number; lon: number } | null) => void
+  onCursor?: (point: { lat: number; lon: number } | null) => void
+  onClick?: (point: { lat: number; lon: number }) => void
   mosaic: ReturnType<typeof useTileMosaic>
+  overlays?: MapOverlay[]
 }
 
 export function TileMap({
@@ -28,13 +44,16 @@ export function TileMap({
   onCenterChange,
   onZoomChange,
   onCursor,
+  onClick,
   mosaic,
+  overlays,
 }: TileMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [size, setSize] = useState({ width: 0, height: 0 })
+  const [size, setSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const [dragging, setDragging] = useState(false)
   const lastPointer = useRef({ x: 0, y: 0 })
+  const dragThreshold = useRef(false)
 
   // Observe container size
   useEffect(() => {
@@ -81,7 +100,29 @@ export function TileMap({
     const drawX = Math.round(data.minX * TILE_SIZE - topLeft.x)
     const drawY = Math.round(data.minY * TILE_SIZE - topLeft.y)
     ctx.drawImage(data.canvas, drawX, drawY)
-  }, [mosaic.query.data, size, zoom, center])
+
+    // Draw optional geographic overlays (e.g. hazard raster).
+    if (overlays && overlays.length > 0) {
+      for (const overlay of overlays) {
+        const { x: sx, y: sy } = latLonToPixel(
+          { lat: overlay.bbox.north, lon: overlay.bbox.west },
+          center,
+          zoom,
+          size,
+        )
+        const { x: ex, y: ey } = latLonToPixel(
+          { lat: overlay.bbox.south, lon: overlay.bbox.east },
+          center,
+          zoom,
+          size,
+        )
+        const prevAlpha = ctx.globalAlpha
+        ctx.globalAlpha = overlay.opacity ?? 0.55
+        ctx.drawImage(overlay.canvas, sx, sy, ex - sx, ey - sy)
+        ctx.globalAlpha = prevAlpha
+      }
+    }
+  }, [mosaic.query.data, size, zoom, center, overlays])
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -91,12 +132,12 @@ export function TileMap({
     if (dragging) {
       const dx = x - lastPointer.current.x
       const dy = y - lastPointer.current.y
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragThreshold.current = true
       lastPointer.current = { x, y }
       panByPixels(dx, dy)
     }
 
-    const point = pixelToLatLon(x, y, size, zoom, center)
-    onCursor(point)
+    onCursor?.(pixelToLatLon(x, y, center, zoom, size))
   }
 
   const panByPixels = (dx: number, dy: number) => {
@@ -130,48 +171,23 @@ export function TileMap({
         className={`absolute inset-0 ${dragging ? 'cursor-grabbing' : 'cursor-crosshair'}`}
         onPointerDown={(e) => {
           setDragging(true)
+          dragThreshold.current = false
           lastPointer.current = { x: e.clientX - e.currentTarget.getBoundingClientRect().left, y: e.clientY - e.currentTarget.getBoundingClientRect().top }
           e.currentTarget.setPointerCapture(e.pointerId)
         }}
         onPointerUp={(e) => {
           setDragging(false)
           e.currentTarget.releasePointerCapture(e.pointerId)
+          if (!dragThreshold.current) {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const px = e.clientX - rect.left
+            const py = e.clientY - rect.top
+            onClick?.(pixelToLatLon(px, py, center, zoom, size))
+          }
         }}
         onPointerMove={handlePointerMove}
-        onPointerLeave={() => onCursor(null)}
+        onPointerLeave={() => onCursor?.(null)}
       />
     </div>
   )
-}
-
-function pixelToLatLon(
-  px: number,
-  py: number,
-  size: { width: number; height: number },
-  zoom: number,
-  center: { lat: number; lon: number },
-): { lat: number; lon: number } {
-  const { cols, rows } = tileGridForZoom(zoom)
-  const worldW = cols * TILE_SIZE
-  const worldH = rows * TILE_SIZE
-  const centerPx = {
-    x: ((center.lon + 180) / 360) * worldW,
-    y: ((90 - center.lat) / 180) * worldH,
-  }
-  const topLeft = { x: centerPx.x - size.width / 2, y: centerPx.y - size.height / 2 }
-  const worldX = topLeft.x + px
-  const worldY = topLeft.y + py
-  const lon = (worldX / worldW) * 360 - 180
-  const lat = 90 - (worldY / worldH) * 180
-  return { lat, lon }
-}
-
-function clampCenter(
-  center: { lat: number; lon: number },
-  bbox: { west: number; south: number; east: number; north: number },
-): { lat: number; lon: number } {
-  return {
-    lat: Math.max(bbox.south, Math.min(bbox.north, center.lat)),
-    lon: Math.max(bbox.west, Math.min(bbox.east, center.lon)),
-  }
 }

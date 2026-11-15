@@ -25,7 +25,7 @@ interface DashboardModule {
   statusVariant: 'success' | 'default' | 'outline' | 'warning'
 }
 
-/** Module A — the mission-control overview of what ARES does, where each module stands. */
+/** Public-facing mission systems overview. */
 export function ModuleGrid() {
   const modules: DashboardModule[] = [
     {
@@ -33,23 +33,23 @@ export function ModuleGrid() {
       title: 'Exploration Atlas',
       description: 'Searchable, source-cited points of interest with accuracy labels.',
       icon: MapIcon,
-      status: 'Live',
-      statusVariant: 'success',
+      status: 'Open',
+      statusVariant: 'outline',
     },
     {
       to: '/data-sources',
       title: 'Data & Sources',
       description: 'Every dataset: provider, instrument, resolution, kind, credits.',
       icon: Database,
-      status: 'Live',
-      statusVariant: 'success',
+      status: 'Open',
+      statusVariant: 'outline',
     },
     {
       to: '/globe',
       title: 'Mars Globe',
       description: 'Real-texture 3D planet with markers, atmosphere and lighting.',
       icon: Globe2,
-      status: 'Phase 2',
+      status: 'Open',
       statusVariant: 'outline',
     },
     {
@@ -57,15 +57,15 @@ export function ModuleGrid() {
       title: 'Jezero Explorer',
       description: 'Regional 2D/3D surface exploration with scientific layers.',
       icon: Mountain,
-      status: 'Phase 3',
+      status: 'Open',
       statusVariant: 'outline',
     },
     {
       to: '/hazards',
       title: 'Hazard Analysis',
-      description: 'Slope and roughness difficulty classes with documented criteria.',
+      description: 'Slope-derived difficulty classes with documented criteria.',
       icon: ShieldAlert,
-      status: 'Phase 4',
+      status: 'Open',
       statusVariant: 'outline',
     },
     {
@@ -73,7 +73,7 @@ export function ModuleGrid() {
       title: 'Route Planner',
       description: 'A* over terrain cost — distance, slope, difficulty, safety prefs.',
       icon: Route,
-      status: 'Phase 4',
+      status: 'Open',
       statusVariant: 'outline',
     },
     {
@@ -81,25 +81,25 @@ export function ModuleGrid() {
       title: 'Marswalk Simulator',
       description: 'Oxygen budget, return feasibility, READY / CAUTION / NO-GO.',
       icon: Rocket,
-      status: 'Phase 5',
+      status: 'Open',
       statusVariant: 'outline',
     },
     {
       to: '/atlas',
       title: 'Mission Dashboard',
-      description: 'You are here — overview, telemetry, program status.',
+      description: 'You are here — overview, telemetry, and featured sites.',
       icon: Sparkles,
-      status: 'Live',
-      statusVariant: 'success',
+      status: 'Open',
+      statusVariant: 'outline',
     },
   ]
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6">
       <SectionHeading
-        eyebrow="Modules"
-        title="Mission systems"
-        description="Each module is phase-gated with acceptance criteria (see docs/DEVELOPMENT_ROADMAP.md). Live modules run on the verified Phase 1 data catalog."
+        eyebrow="Mission systems"
+        title="Explore, plan and simulate"
+        description="Every tool is built on verified NASA/USGS data and is open for exploration."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {modules.map((mod, i) => {

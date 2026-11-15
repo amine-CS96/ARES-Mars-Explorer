@@ -1,7 +1,6 @@
 import { Menu } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { NAV_ITEMS, type NavItem } from './navConfig'
 import { LogoMark } from './LogoMark'
@@ -65,9 +64,9 @@ export function TopNav() {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <Badge variant="default" className="hidden md:inline-flex">
-              Phase 1 · Foundation
-            </Badge>
+            <span className="hidden rounded border border-line bg-white/[0.03] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-ink-faint md:inline-flex">
+              NASA Space Apps 2026
+            </span>
             <Button
               variant="secondary"
               size="icon"

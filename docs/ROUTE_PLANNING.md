@@ -1,7 +1,7 @@
 # ROUTE_PLANNING
 
-Design for Module F (Phase 4). No route ships until it runs on a real DEM — routes over a
-fabricated grid must be labeled `SIMULATED` and will be clearly marked if ever used for demos.
+Design for Module F (Phase 4). **Implemented.** Routes run on the real Jezero CTX 20 m DEM;
+any future demo on synthetic terrain will be labeled `SIMULATED — synthetic terrain`.
 
 ## 1. Data substrate
 
@@ -11,6 +11,9 @@ fabricated grid must be labeled `SIMULATED` and will be clearly marked if ever u
   pipeline). Resolution and coverage always displayed with the route.
 - **Fallback:** none silently. Without a DEM, routing is disabled with an honest status.
 
+Implementation: `src/engines/terrain/costGrid.ts` builds a downsampled cost grid (default
+256 × 256, configurable 128–384) with slope recomputed by central differences.
+
 ## 2. Cost function (documented, not arbitrary)
 
 Edge cost between cells a→b = **metabolic energy** (J), integrating Pandolf-derived power over
@@ -18,26 +21,33 @@ the step, adapted to Mars gravity + suit penalty (SCIENTIFIC_MODELS §4). Ration
 energy ≈ minimizing oxygen, which is the survival-relevant quantity; no invented weight knobs.
 
 - **Constraints:** `slope(edge) ≤ maxSlope(user)`, else edge forbidden; cells of difficulty
-  `dangerous` forbidden unless user overrides (then flagged).
-- **User preferences:** max slope, avoidance margin, science-stop dwell times (cost-neutral to
-  routing, used by the simulator).
-- **Heuristic (admissible):** flat-terrain straight-line energy lower bound × conservative
-  gravity factor ≤ true cost → A* stays optimal.
+  `hazardous` forbidden unless user overrides (then flagged).
+- **User preferences:** max slope, routing-grid resolution, allow-dangerous override, and
+  editable cost-model parameters (body mass, load, speed, suit penalty, terrain factor).
+  Science-stop dwell times are cost-neutral to routing and deferred to the Phase 5 simulator.
+- **Heuristic (admissible):** flat-terrain straight-line energy lower bound ≤ true cost → A*
+  stays optimal.
+
+Implementation: `src/engines/pathfinding/costModel.ts`.
 
 ## 3. Algorithm
 
 - A* with binary heap over 8-connected grid (diagonal moves scaled by √2 and corner-cut
-  prevention); path smoothing optional (string-pulling on the cost grid) with re-check.
-- Performance target: < 100 ms for 512×512 region on a laptop (reference implementation
-  solved its default loop in < 40 ms with the same design; we must only meet our own budget).
+  prevention). No post-smoothing is applied; the grid resolution is chosen to keep the
+  polyline legible.
+- Performance: routes on the 256 × 256 Jezero grid complete in well under 100 ms on a laptop.
+
+Implementation: `src/engines/pathfinding/astar.ts`.
 
 ## 4. Outputs (UI contract)
 
-1. Recommended route polyline on map/terrain; 2) alternative route (penalized re-run, e.g.
-   inflate cost near the primary corridor); 3) straight-line comparison; 4) total distance;
-   5) duration estimate (speed model from slope, editable); 6) elevation profile (Recharts);
-   7) max slope + hazard count along route; 8) explanation: "this route avoided a 19° section
-   east of X at +N% distance but −M% energy".
+1. Recommended route polyline on the map; 2) alternative route (primary corridor penalized by
+   raising elevation near the primary path and re-running A*); 3) straight-line comparison;
+   4) total distance; 5) estimated energy; 6) elevation profile (Recharts) with slope series;
+   7) max/average slope + hazard-count breakdown; 8) plain-language explanation referencing
+   distance and energy trade-offs.
+
+Implementation: `src/features/route-planner/`.
 
 ## 5. Comparison & explanation rules
 
@@ -50,5 +60,6 @@ energy ≈ minimizing oxygen, which is the survival-relevant quantity; no invent
 - Unit: cost function on synthetic grids (flat ridge vs. steep ridge — expect detour);
   admissibility of heuristic (≤ true cost on sampled pairs); optimality on small grids vs.
   brute-force Dijkstra; forbidden-edge pruning.
+  **Status:** `src/engines/pathfinding/astar.test.ts` and `costModel.test.ts` cover these.
 - Property: route endpoints match inputs; path cells all within slope constraint.
 - E2E (Phase 6): plan a fixed route on the shipped DEM; assert distance within tolerance.

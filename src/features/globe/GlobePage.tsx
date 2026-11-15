@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
-import { Satellite } from 'lucide-react'
+import { MapPin, Satellite } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { LatLon } from '@/types/geo'
 import type { PointOfInterest } from '@/types/poi'
 import { places } from '@/data/places'
@@ -9,6 +10,7 @@ import {
   getVerifiedLayer,
 } from '@/services/nasa/marsTrekProvider'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { Button } from '@/components/ui/button'
 import { PoiDetailDialog } from '@/features/points-of-interest'
 import { GlobeCanvas } from './GlobeCanvas'
 import { GlobeFallback } from './GlobeFallback'
@@ -81,7 +83,7 @@ export function GlobePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="animate-fade-up">
-        <p className="eyebrow mb-2">Module B · Interactive globe</p>
+        <p className="eyebrow mb-2">Interactive globe</p>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-display text-3xl font-bold tracking-wide text-ink sm:text-4xl">
             3D Mars Globe
@@ -99,6 +101,14 @@ export function GlobePage() {
           carrying their accuracy labels. Drag to rotate · scroll or pinch to zoom · click a
           marker for its full record.
         </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Button size="lg" variant="secondary" asChild>
+            <Link to="/explorer">
+              <MapPin className="size-4" aria-hidden="true" />
+              Explore Jezero Crater
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="relative mt-8 h-[540px] overflow-hidden rounded-xl border border-line bg-surface shadow-panel sm:h-[600px] lg:h-[660px]">
@@ -184,8 +194,7 @@ export function GlobePage() {
           <span className="font-mono uppercase tracking-wider text-cyan/90">Texture</span> — live
           composite of verified NASA Mars Trek WMTS tiles ({layer.title}, {layer.instrument},{' '}
           {layer.resolutionMetersPerPixel} m/px), composed client-side from {tier.tileCount} tiles
-          at the {tier.label.toLowerCase()} tier. Endpoints verified live from this environment
-          (docs/DATA_SOURCES.md §1).
+          at the {tier.label.toLowerCase()} tier. Endpoints verified live from this environment.
         </p>
         <p>
           <span className="font-mono uppercase tracking-wider text-cyan/90">Markers</span> — Atlas

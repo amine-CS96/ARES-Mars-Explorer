@@ -1,51 +1,128 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
-import { JEZERO_CONFIG } from './regionConfig'
-import { TileMap } from './TileMap'
-import { TerrainScene } from './TerrainScene'
-import { ExplorerHud } from './ExplorerHud'
-import { useTileMosaic } from './useTileMosaic'
-import { TerrainSampler } from './elevationSampler'
+import {
+  JEZERO_CONFIG,
+  TerrainScene,
+  useTileMosaic,
+  TerrainSampler,
+  computeVisibleTiles,
+  TILE_SIZE,
+} from './'
+import {
+  getVerifiedLayer,
+  VERIFIED_GLOBAL_LAYERS,
+  VERIFIED_REGIONAL_LAYERS,
+} from '@/services/nasa/marsTrekProvider'
+import type { TrekLayer } from '@/services/nasa/types'
+import type { LatLon } from '@/types/geo'
+import { places } from '@/data/places'
 import { useRoverTrack } from './useRoverTrack'
 import type { RoverWaypoint } from './roverTrack'
+import { MapCanvas } from './components/MapCanvas'
+import { LayerPanel } from './components/LayerPanel'
+import { InspectorPanel } from './components/InspectorPanel'
+import { MapToolbar } from './components/MapToolbar'
+import { ScaleBar } from './components/ScaleBar'
+import { CoordinateBar } from './components/CoordinateBar'
+import { GridOverlay } from './components/GridOverlay'
+import { CoverageBoundary } from './components/CoverageBoundary'
+import { MeasurementOverlay } from './components/MeasurementOverlay'
+import { ProfileOverlay } from './components/ProfileOverlay'
 
-const TILE_SIZE = 256
 
-/**
- * Module C — Jezero Crater surface explorer.
- *
- * 2D pan/zoom tile map (regional HiRISE / CTX) plus a 3D displaced terrain view driven by the
- * committed CTX 20 m DEM pipeline. Cursor readout shows coordinates, elevation and slope class.
- * The rover track is the dated MMGIS waypoints snapshot.
- */
+export type ExplorerTool = 'navigate' | 'inspect' | 'measure' | 'profile'
+
+const DEFAULT_BASE_LAYER = VERIFIED_GLOBAL_LAYERS[0].id
+const DEFAULT_OVERLAY_LAYER = VERIFIED_REGIONAL_LAYERS[0].id
+
+/** Clamp a requested viewport zoom to the tiles a layer actually serves. */
+function clampTileZoom(layer: TrekLayer | undefined, viewportZoom: number): number {
+  if (!layer) return viewportZoom
+  const min = layer.minZoom ?? 0
+  const max = layer.maxZoom ?? 18
+  return Math.max(min, Math.min(max, viewportZoom))
+}
+
+function haversineMeters(a: LatLon, b: LatLon): number {
+  const R = 3_389_500
+  const toRad = Math.PI / 180
+  const dLat = (b.lat - a.lat) * toRad
+  const dLon = (b.lon - a.lon) * toRad
+  const lat1 = a.lat * toRad
+  const lat2 = b.lat * toRad
+  const sinDLat2 = Math.sin(dLat / 2)
+  const sinDLon2 = Math.sin(dLon / 2)
+  const h = sinDLat2 * sinDLat2 + Math.cos(lat1) * Math.cos(lat2) * sinDLon2 * sinDLon2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
 
 export function ExplorerPage() {
   const config = JEZERO_CONFIG
+  const [searchParams] = useSearchParams()
+
+  // View state
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d')
-  const [activeLayerId, setActiveLayerId] = useState(config.layers[0].id)
-  const [center, setCenter] = useState(config.center)
+  const [center, setCenter] = useState<{ lat: number; lon: number }>(() => {
+    const lat = Number.parseFloat(searchParams.get('lat') ?? '')
+    const lon = Number.parseFloat(searchParams.get('lon') ?? '')
+    if (
+      Number.isFinite(lat) &&
+      Number.isFinite(lon) &&
+      lon >= config.bbox.west &&
+      lon <= config.bbox.east &&
+      lat >= config.bbox.south &&
+      lat <= config.bbox.north
+    ) {
+      return { lat, lon }
+    }
+    return config.center
+  })
   const [zoom, setZoom] = useState(config.defaultZoom)
-  const [cursor, setCursor] = useState<{ lat: number; lon: number } | null>(null)
-  const [sampler, setSampler] = useState<TerrainSampler | null>(null)
   const [verticalScale, setVerticalScale] = useState(2.5)
+
+  // Layer state
+  const [baseLayerId, setBaseLayerId] = useState(DEFAULT_BASE_LAYER)
+  const [overlayLayerId, setOverlayLayerId] = useState<string | null>(DEFAULT_OVERLAY_LAYER)
+  const [overlayOpacity, setOverlayOpacity] = useState(1)
+  const [showGrid, setShowGrid] = useState(false)
+  const [showCoverageBoundary, setShowCoverageBoundary] = useState(true)
+  const [showRoverTrack, setShowRoverTrack] = useState(true)
+
+  // Tools
+  const [activeTool, setActiveTool] = useState<ExplorerTool>('navigate')
+  const [cursor, setCursor] = useState<LatLon | null>(null)
+  const [inspectedPoint, setInspectedPoint] = useState<LatLon | null>(null)
+  const [measurementPoints, setMeasurementPoints] = useState<LatLon[]>([])
+  const [profilePoints, setProfilePoints] = useState<LatLon[]>([])
+
+  // UI panels
+  const [layerPanelOpen, setLayerPanelOpen] = useState(true)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const [mapSize, setMapSize] = useState({ width: 0, height: 0 })
 
-  const activeLayer = useMemo(
-    () => config.layers.find((l) => l.id === activeLayerId) ?? config.layers[0],
-    [activeLayerId, config.layers],
+  const baseLayer = useMemo(
+    () => getVerifiedLayer(baseLayerId) ?? VERIFIED_GLOBAL_LAYERS[0],
+    [baseLayerId],
+  )
+  const overlayLayer = useMemo(
+    () => (overlayLayerId ? getVerifiedLayer(overlayLayerId) ?? null : null),
+    [overlayLayerId],
   )
 
-  // Clamp zoom to the active layer's supported range
+  // Effective zoom is clamped to the regional config bounds, then each layer uses its own tile zoom.
   const effectiveZoom = useMemo(
-    () =>
-      Math.max(
-        activeLayer.minZoom ?? config.minZoom,
-        Math.min(activeLayer.maxZoom ?? config.maxZoom, zoom),
-      ),
-    [activeLayer.maxZoom, activeLayer.minZoom, config.maxZoom, config.minZoom, zoom],
+    () => Math.max(config.minZoom, Math.min(config.maxZoom, zoom)),
+    [config.maxZoom, config.minZoom, zoom],
+  )
+  const baseTileZoom = useMemo(() => clampTileZoom(baseLayer, effectiveZoom), [baseLayer, effectiveZoom])
+  const overlayTileZoom = useMemo(
+    () => (overlayLayer ? clampTileZoom(overlayLayer, effectiveZoom) : effectiveZoom),
+    [overlayLayer, effectiveZoom],
   )
 
   // Observe the map container size
@@ -62,15 +139,20 @@ export function ExplorerPage() {
     return () => ro.disconnect()
   }, [viewMode])
 
-  // Compute visible tiles for the current 2D view
-  const visibleTiles = useMemo(() => {
+  // Visible tiles for base and overlay layers
+  const baseVisibleTiles = useMemo(() => {
     if (mapSize.width === 0 || mapSize.height === 0) return []
-    return computeVisibleTiles(center, effectiveZoom, mapSize)
-  }, [center, effectiveZoom, mapSize])
+    return computeVisibleTiles(center, baseTileZoom, mapSize)
+  }, [center, baseTileZoom, mapSize])
+  const overlayVisibleTiles = useMemo(() => {
+    if (mapSize.width === 0 || mapSize.height === 0 || !overlayLayer) return []
+    return computeVisibleTiles(center, overlayTileZoom, mapSize)
+  }, [center, overlayTileZoom, mapSize, overlayLayer])
 
-  const mosaic = useTileMosaic(activeLayer, visibleTiles)
+  const baseMosaic = useTileMosaic(baseLayer, baseVisibleTiles)
+  const overlayMosaic = useTileMosaic(overlayLayer ?? baseLayer, overlayVisibleTiles)
 
-  // Load DEM metadata
+  // Load DEM metadata and sampler
   const metadataQuery = useQuery<{
     elevation: { minMeters: number; maxMeters: number }
     bbox: { west: number; south: number; east: number; north: number }
@@ -87,7 +169,7 @@ export function ExplorerPage() {
 
   const roverTrack = useRoverTrack(config.roverTrackPath)
 
-  // Initialize the terrain sampler once
+  const [sampler, setSampler] = useState<TerrainSampler | null>(null)
   useEffect(() => {
     let cancelled = false
     const ts = new TerrainSampler(
@@ -107,114 +189,310 @@ export function ExplorerPage() {
     }
   }, [config.dem.heightmapPath, config.dem.slopePath, config.dem.metadataPath])
 
-  // Terrain sample is derived from cursor + loaded sampler (no effect setState)
-  const terrainSample = useMemo(() => {
+  // Terrain samples for cursor, inspected point, and profile line
+  const cursorTerrain = useMemo(() => {
     if (!cursor || !sampler) return null
     return sampler.sample(cursor.lat, cursor.lon)
   }, [cursor, sampler])
 
-  const handleCursorMove = useCallback((point: { lat: number; lon: number } | null) => {
+  const inspectedTerrain = useMemo(() => {
+    if (!inspectedPoint || !sampler) return null
+    return sampler.sample(inspectedPoint.lat, inspectedPoint.lon)
+  }, [inspectedPoint, sampler])
+
+  const profileSamples = useMemo(() => {
+    if (profilePoints.length < 2 || !sampler) return []
+    const [start, end] = [profilePoints[0], profilePoints[profilePoints.length - 1]]
+    const steps = 60
+    const samples = []
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps
+      const lat = start.lat + (end.lat - start.lat) * t
+      const lon = start.lon + (end.lon - start.lon) * t
+      const sample = sampler.sample(lat, lon)
+      if (sample) samples.push({ lat, lon, distanceM: haversineMeters(start, { lat, lon }), ...sample })
+    }
+    return samples
+  }, [profilePoints, sampler])
+
+  const handleCursorMove = useCallback((point: LatLon | null) => {
     setCursor(point)
   }, [])
 
-  const demMetadata = useMemo(() => {
-    if (!metadataQuery.data) return null
-    return metadataQuery.data
-  }, [metadataQuery.data])
+  const handleMapClick = useCallback(
+    (point: LatLon) => {
+      if (activeTool === 'inspect') {
+        setInspectedPoint(point)
+        setInspectorOpen(true)
+      } else if (activeTool === 'measure') {
+        setMeasurementPoints((prev) => {
+          const next = [...prev, point]
+          return next.length > 2 ? [point] : next
+        })
+      } else if (activeTool === 'profile') {
+        setProfilePoints((prev) => {
+          const next = [...prev, point]
+          return next.length > 2 ? [point] : next
+        })
+      }
+    },
+    [activeTool],
+  )
+
+  const resetView = useCallback(() => {
+    setCenter(config.center)
+    setZoom(config.defaultZoom)
+    setInspectedPoint(null)
+    setMeasurementPoints([])
+    setProfilePoints([])
+  }, [config.center, config.defaultZoom])
+
+  const quickLocations = useMemo(
+    () =>
+      places
+        .filter((p) => p.region === 'jezero-crater' || p.id === 'jezero-crater')
+        .map((p) => ({
+          name: p.name,
+          lat: p.coordinates.lat,
+          lon: p.coordinates.lon,
+          zoom: p.category === 'landing-site' || p.category === 'mission' ? 14 : 12,
+        })),
+    [],
+  )
+
+  const activeLayerName = overlayLayer?.title ?? baseLayer.title
+
+  // Coverage boundaries to render
+  const boundaries = useMemo(
+    () => [
+      {
+        id: 'dem',
+        name: 'DEM coverage',
+        color: '#53d6e8',
+        bbox: config.bbox,
+      },
+      ...(overlayLayer?.bbox && overlayLayer.id !== 'JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0'
+        ? [
+            {
+              id: 'overlay',
+              name: overlayLayer.title,
+              color: '#fbbf24',
+              bbox: overlayLayer.bbox,
+            },
+          ]
+        : []),
+    ],
+    [config.bbox, overlayLayer],
+  )
+
+  const totalFailed = (baseMosaic.query.data?.tilesFailed ?? 0) + (overlayMosaic.query.data?.tilesFailed ?? 0)
+  const totalLoaded = (baseMosaic.query.data?.tilesTotal ?? 0) + (overlayMosaic.query.data?.tilesTotal ?? 0)
+  const loadedCount = totalFailed > 0 ? totalLoaded - totalFailed : totalLoaded
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-      <div className="animate-fade-up">
-        <p className="eyebrow mb-2">Module C · Surface exploration</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-3xl font-bold tracking-wide text-ink sm:text-4xl">
-            Jezero Crater Explorer
-          </h1>
-          <span className="rounded border border-success/40 bg-success/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-success">
-            Verified regional tiles
-          </span>
-          <span className="rounded border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent">
-            DEM pipeline
-          </span>
+    <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden bg-space">
+      {/* Page header — kept compact so the map remains the focus */}
+      <header className="border-b border-line bg-space/95 px-4 py-3 backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="eyebrow mb-1 text-[9px]">Surface exploration</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-xl font-bold tracking-wide text-ink sm:text-2xl">
+                Jezero Crater Explorer
+              </h1>
+              <span className="rounded border border-success/40 bg-success/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-success">
+                Verified regional tiles
+              </span>
+              <span className="rounded border border-accent/40 bg-accent/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-accent">
+                Derived elevation
+              </span>
+            </div>
+          </div>
+          <p className="max-w-md text-[11px] leading-relaxed text-ink-dim">
+            Pan and zoom through Perseverance&apos;s neighborhood. Switch base maps and regional
+            overlays, inspect terrain, measure distances and draw elevation profiles.
+          </p>
         </div>
-        <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-ink-dim">
-          Pan and zoom through Perseverance's neighborhood. The 2D map streams verified HiRISE
-          (25 cm) and CTX (6 m) tiles from NASA Mars Trek; the 3D view displaces real terrain from
-          the USGS CTX 20 m DEM. Hover for coordinates, elevation and slope.
-        </p>
-      </div>
+      </header>
 
-      <div
-        ref={mapContainerRef}
-        className="relative mt-8 h-[540px] overflow-hidden rounded-xl border border-line bg-surface shadow-panel sm:h-[600px] lg:h-[660px]"
-      >
-        {viewMode === '2d' ? (
-          <>
-            <TileMap
-              config={config}
-              zoom={effectiveZoom}
-              center={center}
-              onCenterChange={setCenter}
-              onZoomChange={setZoom}
-              onCursor={handleCursorMove}
-              mosaic={mosaic}
-            />
-            {roverTrack.data ? (
-              <RoverTrackOverlay
-                waypoints={roverTrack.data.waypoints}
-                center={center}
+      {/* Top toolbar */}
+      <MapToolbar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onResetView={resetView}
+        onToggleLayerPanel={() => setLayerPanelOpen((v) => !v)}
+        quickLocations={quickLocations}
+        onQuickLocation={(loc) => {
+          setCenter({ lat: loc.lat, lon: loc.lon })
+          setZoom(loc.zoom)
+        }}
+      />
+
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Left layer panel */}
+        <LayerPanel
+          baseLayerId={baseLayerId}
+          onBaseLayerChange={setBaseLayerId}
+          overlayLayerId={overlayLayerId}
+          onOverlayLayerChange={setOverlayLayerId}
+          overlayOpacity={overlayOpacity}
+          onOverlayOpacityChange={setOverlayOpacity}
+          showGrid={showGrid}
+          onShowGridChange={setShowGrid}
+          showCoverageBoundary={showCoverageBoundary}
+          onShowCoverageBoundaryChange={setShowCoverageBoundary}
+          showRoverTrack={showRoverTrack}
+          onShowRoverTrackChange={setShowRoverTrack}
+          activeTool={activeTool}
+          onActiveToolChange={(tool) => {
+            setActiveTool(tool)
+            if (tool === 'navigate') {
+              setInspectedPoint(null)
+              setMeasurementPoints([])
+              setProfilePoints([])
+            }
+          }}
+          isOpen={layerPanelOpen}
+          onClose={() => setLayerPanelOpen(false)}
+        />
+
+        {/* Main map area */}
+        <div ref={mapContainerRef} className="relative flex-1 overflow-hidden bg-space">
+          {viewMode === '2d' ? (
+            <>
+              <MapCanvas
+                config={config}
                 zoom={effectiveZoom}
-                size={mapSize}
+                center={center}
+                onCenterChange={setCenter}
+                onZoomChange={setZoom}
+                onCursor={handleCursorMove}
+                onClick={handleMapClick}
+                baseMosaic={baseMosaic}
+                baseTileZoom={baseTileZoom}
+                overlayMosaic={overlayLayer ? overlayMosaic : undefined}
+                overlayTileZoom={overlayLayer ? overlayTileZoom : undefined}
+                overlayOpacity={overlayOpacity}
               />
-            ) : null}
-            {mosaic.query.data && mosaic.query.data.tilesFailed > 0 ? (
-              <p className="absolute left-3 top-24 z-30 flex items-center gap-2 rounded-lg border border-amber/30 bg-amber/5 px-3 py-2 text-xs text-amber">
-                <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-                <span>
-                  {mosaic.query.data.tilesFailed} tiles unavailable — shown dark. ARES does not
-                  substitute missing pixels.
-                </span>
+              {showGrid ? (
+                <GridOverlay
+                  center={center}
+                  zoom={effectiveZoom}
+                  size={mapSize}
+                  visible={showGrid}
+                />
+              ) : null}
+              {showRoverTrack && roverTrack.data ? (
+                <RoverTrackOverlay
+                  waypoints={roverTrack.data.waypoints}
+                  center={center}
+                  zoom={effectiveZoom}
+                  size={mapSize}
+                />
+              ) : null}
+              {showCoverageBoundary ? (
+                <CoverageBoundary
+                  boundaries={boundaries}
+                  center={center}
+                  zoom={effectiveZoom}
+                  size={mapSize}
+                  visible={showCoverageBoundary}
+                />
+              ) : null}
+              {measurementPoints.length > 0 ? (
+                <MeasurementOverlay
+                  points={measurementPoints}
+                  center={center}
+                  zoom={effectiveZoom}
+                  size={mapSize}
+                />
+              ) : null}
+              {profilePoints.length > 0 ? (
+                <ProfileOverlay
+                  points={profilePoints}
+                  center={center}
+                  zoom={effectiveZoom}
+                  size={mapSize}
+                />
+              ) : null}
+              {totalFailed > 0 ? (
+                <div className="pointer-events-none absolute left-3 top-14 z-30 flex items-center gap-2 rounded-lg border border-amber/30 bg-amber/5 px-3 py-2 text-xs text-amber">
+                  <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+                  <span>
+                    {totalFailed} tiles unavailable — shown dark. ARES does not substitute missing
+                    pixels.
+                  </span>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <Canvas camera={{ fov: 50, near: 0.1, far: 200 }}>
+                <TerrainScene
+                  config={config}
+                  demMetadata={metadataQuery.data ?? null}
+                  verticalScale={verticalScale}
+                />
+              </Canvas>
+              <div className="pointer-events-auto absolute right-4 top-4 z-30 rounded-lg border border-line bg-space/85 p-2 backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-ink-dim">Vertical exaggeration</span>
+                  <input
+                    type="range"
+                    min={1}
+                    max={6}
+                    step={0.5}
+                    value={verticalScale}
+                    onChange={(e) => setVerticalScale(Number.parseFloat(e.target.value))}
+                    className="h-1 w-24 cursor-pointer appearance-none rounded bg-surface-2 accent-cyan"
+                    aria-label="Vertical exaggeration"
+                  />
+                  <span className="font-mono text-[9px] text-ink-dim">{verticalScale.toFixed(1)}×</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Floating scale bar */}
+          <div className="pointer-events-none absolute bottom-10 left-4 z-30">
+            <ScaleBar zoom={effectiveZoom} latitude={center.lat} />
+          </div>
+
+          {/* Cursor readout (compact, top-left inside map) */}
+          <div className="pointer-events-none absolute left-4 top-4 z-30 rounded-lg border border-line bg-space/85 px-3 py-2 backdrop-blur-md">
+            <p className="font-mono text-[10px] text-cyan/90">
+              {cursor ? `${cursor.lat.toFixed(5)}°N, ${cursor.lon.toFixed(5)}°E` : 'Cursor — hover the map'}
+            </p>
+            {cursorTerrain ? (
+              <p className="font-mono text-[10px] text-ink">
+                Elev {cursorTerrain.elevationMeters.toFixed(1)} m · Slope {cursorTerrain.slopeDegrees.toFixed(1)}°
               </p>
             ) : null}
-          </>
-        ) : (
-          <Canvas camera={{ fov: 50, near: 0.1, far: 200 }}>
-            <TerrainScene config={config} demMetadata={demMetadata} verticalScale={verticalScale} />
-          </Canvas>
-        )}
+          </div>
+        </div>
 
-        <ExplorerHud
-          layers={config.layers}
-          activeLayerId={activeLayerId}
-          onLayerChange={setActiveLayerId}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          cursor={cursor}
-          terrain={terrainSample}
-          verticalScale={verticalScale}
-          onVerticalScaleChange={setVerticalScale}
+        {/* Right inspector panel */}
+        <InspectorPanel
+          inspectedPoint={inspectedPoint}
+          terrain={inspectedTerrain}
+          profileSamples={profileSamples}
+          isOpen={inspectorOpen}
+          onClose={() => setInspectorOpen(false)}
         />
       </div>
 
-      <footer className="mt-8 space-y-1.5 rounded-xl border border-line bg-surface/50 p-4 text-[11px] leading-relaxed text-ink-faint">
-        <p>
-          <span className="font-mono uppercase tracking-wider text-cyan/90">Imagery</span> — live
-          regional WMTS tiles from NASA Mars Trek. HiRISE layer bbox and zoom range derived from
-          the layer's GetCapabilities (K-3 resolved); CTX layer uses the same Trek matrix set with
-          its zoom range verified by live tile requests.
-        </p>
-        <p>
-          <span className="font-mono uppercase tracking-wider text-cyan/90">Elevation & slope</span>{' '}
-          — generated from the USGS Mars 2020 TRN CTX DTM Mosaic (20 m/px) via the Node pipeline
-          (geotiff.js + sharp). Elevation is measured relative to the MOLA areoid; slope is derived
-          by Horn finite differences. Precision of the encoded heightmap: ~0.02 m per level.
-        </p>
-        <p>
-          <span className="font-mono uppercase tracking-wider text-cyan/90">Rover track</span> —
-          dated snapshot of the MMGIS Perseverance waypoint feed. Interactive planning outputs are
-          estimates, never certified flight-safety products.
-        </p>
-      </footer>
+      {/* Bottom coordinate/status bar */}
+      <CoordinateBar
+        cursor={cursor}
+        center={center}
+        zoom={effectiveZoom}
+        activeLayerName={activeLayerName}
+        tileStatus={{
+          loaded: loadedCount,
+          total: totalLoaded,
+          failed: totalFailed,
+        }}
+      />
     </div>
   )
 }
@@ -242,60 +520,35 @@ function RoverTrackOverlay({
       y: ((90 - center.lat) / 180) * worldH,
     }
     const topLeft = { x: centerPx.x - size.width / 2, y: centerPx.y - size.height / 2 }
-
-    return waypoints.map((wp) => {
-      const px = ((wp.lon + 180) / 360) * worldW - topLeft.x
-      const py = ((90 - wp.lat) / 180) * worldH - topLeft.y
-      return { x: px, y: py }
-    })
+    return waypoints
+      .map((wp) => {
+        const worldX = ((wp.lon + 180) / 360) * worldW
+        const worldY = ((90 - wp.lat) / 180) * worldH
+        return { x: worldX - topLeft.x, y: worldY - topLeft.y }
+      })
+      .filter((p) => p.x >= -50 && p.x <= size.width + 50 && p.y >= -50 && p.y <= size.height + 50)
   }, [waypoints, center, zoom, size])
 
-  if (points.length === 0) return null
+  if (points.length < 2) return null
+
+  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
 
   return (
     <svg className="pointer-events-none absolute inset-0 z-20" width={size.width} height={size.height}>
-      <polyline
-        points={points.map((p) => `${p.x},${p.y}`).join(' ')}
+      <path
+        d={pathD}
         fill="none"
-        stroke="#53d6e8"
+        stroke="#e56b3f"
         strokeWidth={2}
-        strokeLinejoin="round"
         strokeLinecap="round"
-        opacity={0.85}
+        strokeLinejoin="round"
+        opacity={0.9}
       />
-      {points.length > 0 ? (
-        <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r={4} fill="#e56b3f" />
-      ) : null}
+      {points.map((p, i) =>
+        i % 10 === 0 ? (
+          <circle key={i} cx={p.x} cy={p.y} r={2} fill="#f5f7fa" opacity={0.8} />
+        ) : null,
+      )}
     </svg>
   )
-}
-
-function computeVisibleTiles(
-  center: { lat: number; lon: number },
-  zoom: number,
-  size: { width: number; height: number },
-) {
-  const cols = 2 ** (zoom + 1)
-  const rows = 2 ** zoom
-  const worldW = cols * TILE_SIZE
-  const worldH = rows * TILE_SIZE
-  const centerPx = {
-    x: ((center.lon + 180) / 360) * worldW,
-    y: ((90 - center.lat) / 180) * worldH,
-  }
-  const topLeft = { x: centerPx.x - size.width / 2, y: centerPx.y - size.height / 2 }
-  const bottomRight = { x: topLeft.x + size.width, y: topLeft.y + size.height }
-
-  const minX = Math.floor(topLeft.x / TILE_SIZE)
-  const maxX = Math.floor(bottomRight.x / TILE_SIZE)
-  const minY = Math.floor(topLeft.y / TILE_SIZE)
-  const maxY = Math.floor(bottomRight.y / TILE_SIZE)
-
-  const tiles: { z: number; x: number; y: number }[] = []
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      if (x >= 0 && x < cols && y >= 0 && y < rows) tiles.push({ z: zoom, x, y })
-    }
-  }
-  return tiles
 }

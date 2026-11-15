@@ -40,7 +40,7 @@ export function AtlasPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="animate-fade-up">
-        <p className="eyebrow mb-2">Module D · Points of interest</p>
+        <p className="eyebrow mb-2">Exploration Atlas</p>
         <h1 className="font-display text-3xl font-bold tracking-wide text-ink sm:text-4xl">
           Exploration Atlas
         </h1>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { RegionConfig } from './regionConfig'
@@ -115,8 +115,10 @@ export function TerrainScene({ config, demMetadata, verticalScale = 2.5 }: Terra
     [textures],
   )
 
-  const minElev = demMetadata?.elevation.minMeters ?? -3000
-  const maxElev = demMetadata?.elevation.maxMeters ?? -1000
+  // Defaults match the committed Jezero DEM so the first frame is scaled correctly even before
+  // metadata arrives. These are overwritten as soon as the JSON loads.
+  const minElev = demMetadata?.elevation.minMeters ?? -2710.7
+  const maxElev = demMetadata?.elevation.maxMeters ?? -1515.5
 
   const { widthKm, heightKm } = useMemo(() => {
     const { bbox } = config
@@ -141,18 +143,34 @@ export function TerrainScene({ config, demMetadata, verticalScale = 2.5 }: Terra
   })
 
   // Plane segments: enough for smooth displacement without over-tessellating
-  const segmentsX = 180
-  const segmentsY = Math.max(10, Math.round(segmentsX * (heightKm / widthKm)))
+  const segmentsX = 256
+  const segmentsY = Math.max(16, Math.round(segmentsX * (heightKm / widthKm)))
+
+
 
   return (
     <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[5, 5, 10]} intensity={1.2} />
+      <color attach="background" args={['#080b12']} />
+      <fog attach="fog" args={['#080b12', 40, 140]} />
+      <Stars radius={120} depth={60} count={3000} factor={3} saturation={0} fade speed={0.4} />
+
+      {/* Lighting: cool fill + warm key to give relief definition */}
+      <ambientLight intensity={0.35} />
+      <hemisphereLight intensity={0.4} groundColor="#5c3a2a" color="#ffffff" />
+      <directionalLight
+        position={[widthKm * 0.8, heightKm * 0.6, Math.max(widthKm, heightKm) * 0.7]}
+        intensity={1.1}
+        color="#fff5e6"
+        castShadow={false}
+      />
+
+      {/* DEM terrain mesh */}
       <mesh rotation={[0, 0, 0]}>
         <planeGeometry args={[widthKm, heightKm, segmentsX, segmentsY]} />
         <shaderMaterial
           vertexShader={VERTEX_SHADER}
           fragmentShader={FRAGMENT_SHADER}
+          toneMapped={false}
           uniforms={{
             uHeightmap: { value: textures.heightmap },
             uSlopemap: { value: textures.slopemap },
@@ -162,13 +180,55 @@ export function TerrainScene({ config, demMetadata, verticalScale = 2.5 }: Terra
           }}
         />
       </mesh>
+
+      {/* Coverage boundary line — shows the exact DEM extent */}
+      <BoundaryLine widthKm={widthKm} heightKm={heightKm} />
+
+      {/* Flat context plane below the DEM so the coverage edge reads clearly */}
+      <mesh position={[0, 0, (minElev * verticalScale) / 1000 - 0.5]}>
+        <planeGeometry args={[widthKm * 1.6, heightKm * 1.6]} />
+        <meshBasicMaterial color="#161e2d" transparent opacity={0.35} />
+      </mesh>
+
       <OrbitControls
         makeDefault
         enableDamping
         dampingFactor={0.08}
-        minDistance={5}
-        maxDistance={80}
+        minDistance={3}
+        maxDistance={100}
       />
     </>
   )
+}
+
+function BoundaryLine({ widthKm, heightKm }: { widthKm: number; heightKm: number }) {
+  const line = useMemo(() => {
+    const halfW = widthKm / 2
+    const halfH = heightKm / 2
+    const points = [
+      new THREE.Vector3(-halfW, halfH, 0),
+      new THREE.Vector3(halfW, halfH, 0),
+      new THREE.Vector3(halfW, -halfH, 0),
+      new THREE.Vector3(-halfW, -halfH, 0),
+      new THREE.Vector3(-halfW, halfH, 0),
+    ]
+    const geometry = new THREE.BufferGeometry().setFromPoints(points)
+    const material = new THREE.LineBasicMaterial({
+      color: '#53d6e8',
+      linewidth: 1.5,
+      transparent: true,
+      opacity: 0.7,
+    })
+    return new THREE.Line(geometry, material)
+  }, [widthKm, heightKm])
+
+  useEffect(
+    () => () => {
+      line.geometry.dispose()
+      ;(line.material as THREE.LineBasicMaterial).dispose()
+    },
+    [line],
+  )
+
+  return <primitive object={line} />
 }

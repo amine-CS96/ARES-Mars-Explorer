@@ -122,7 +122,7 @@ const rawDatasets: DatasetDescriptor[] = [
     phase: 3,
     credit: 'NASA/JPL-Caltech/University of Arizona — HiRISE',
     notes:
-      'Layer ID JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd (from official Trek catalog). Regional layers 404 at global zoom levels — derive correct matrix set/zoom range from the layer WMTS GetCapabilities before use (see KNOWN_ISSUES K-3).',
+      'Layer ID JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd (from official Trek catalog). Regional layers return 404 at global zoom levels; the correct matrix set and zoom range are derived from the layer WMTS GetCapabilities.',
   },
   {
     id: 'jezero-ctx-6m',
@@ -167,7 +167,7 @@ const rawDatasets: DatasetDescriptor[] = [
     phase: 3,
     credit: 'NASA/JPL-Caltech/MSSS/UArizona; PDS cartography node',
     notes:
-      'Raw GeoTIFF DTMs discovered via Mars Orbital Data Explorer (verified portal). Processed locally by our Node pipeline into heightmaps — nothing derived ships without its provenance.',
+      'Raw GeoTIFF DTMs discovered via Mars Orbital Data Explorer (verified portal). Processed locally into committed heightmaps for fast browser access — every derived product keeps its source citation.',
   },
   {
     id: 'nssdc-mars-facts',

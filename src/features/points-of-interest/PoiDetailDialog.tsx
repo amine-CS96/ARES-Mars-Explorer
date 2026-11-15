@@ -1,4 +1,4 @@
-import { Check, Copy, ExternalLink, Mountain, Rocket, TriangleAlert } from 'lucide-react'
+import { Check, Copy, ExternalLink, MapPin, Mountain, Rocket, Route, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import type { PointOfInterest } from '@/types/poi'
 import { formatElevationM } from '@/utils/format'
@@ -11,12 +11,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
   AccuracyBadge,
   CategoryBadge,
   FictionBadge,
 } from '@/components/ui/status-badges'
+import { Link } from 'react-router-dom'
 
 interface PoiDetailDialogProps {
   place: PointOfInterest | null
@@ -119,6 +121,27 @@ export function PoiDetailDialog({ place, onOpenChange }: PoiDetailDialogProps) {
                 ) : null}
               </div>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" asChild>
+              <Link
+                to={`/explorer?lat=${place.coordinates.lat.toFixed(5)}&lon=${place.coordinates.lon.toFixed(5)}`}
+                className="inline-flex items-center gap-1.5"
+              >
+                <MapPin className="size-3.5" aria-hidden="true" />
+                Open in Explorer
+              </Link>
+            </Button>
+            <Button size="sm" variant="secondary" asChild>
+              <Link
+                to={`/planner?goalLat=${place.coordinates.lat.toFixed(5)}&goalLon=${place.coordinates.lon.toFixed(5)}`}
+                className="inline-flex items-center gap-1.5"
+              >
+                <Route className="size-3.5" aria-hidden="true" />
+                Plan route here
+              </Link>
+            </Button>
           </div>
 
           <Separator className="my-4" />

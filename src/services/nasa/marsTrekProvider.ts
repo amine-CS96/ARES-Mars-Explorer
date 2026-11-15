@@ -89,6 +89,8 @@ export const VERIFIED_GLOBAL_LAYERS: TrekLayer[] = [
     scope: 'global',
     verified: true,
     attribution: 'NASA/JPL-Caltech/GSFC/MSSS · USGS Astrogeology (MOLA)',
+    minZoom: 0,
+    maxZoom: 7,
   },
   {
     id: 'Mars_Viking_MDIM21_ClrMosaic_global_232m',
@@ -100,6 +102,8 @@ export const VERIFIED_GLOBAL_LAYERS: TrekLayer[] = [
     scope: 'global',
     verified: true,
     attribution: 'USGS Astrogeology · NASA/JPL (Viking MDIM 2.1)',
+    minZoom: 0,
+    maxZoom: 7,
   },
   {
     id: 'Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp_lzw',
@@ -111,6 +115,8 @@ export const VERIFIED_GLOBAL_LAYERS: TrekLayer[] = [
     scope: 'global',
     verified: true,
     attribution: 'NASA/JPL/USGS · ESA/DLR/FU Berlin (Mars Express HRSC)',
+    minZoom: 0,
+    maxZoom: 8,
   },
   {
     id: 'THEMIS_NightIR_ControlledMosaics_100m_v2_oct2018',
@@ -122,6 +128,8 @@ export const VERIFIED_GLOBAL_LAYERS: TrekLayer[] = [
     scope: 'global',
     verified: true,
     attribution: 'NASA/JPL-Caltech/ASU (THEMIS)',
+    minZoom: 0,
+    maxZoom: 9,
   },
   {
     id: 'mola_roughness',
@@ -133,6 +141,8 @@ export const VERIFIED_GLOBAL_LAYERS: TrekLayer[] = [
     scope: 'global',
     verified: true,
     attribution: 'NASA/JPL-Caltech/GSFC/MOLA Science Team',
+    minZoom: 0,
+    maxZoom: 7,
   },
 ]
 

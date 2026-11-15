@@ -1,9 +1,9 @@
 # PROJECT_STATUS
 
 > Live state of development. Update after every significant phase.
-> **Current phase: PHASE 3 — Jezero surface explorer (COMPLETE, verified)**
+> **Current phase: PHASE 6 — Polish & demo (COMPLETE, verified). ARES is a shipped public product.**
 
-Last updated: 2026-11-14
+Last updated: 2026-11-15 (Hazards workspace redesign + route-handoff fixes verified)
 
 ---
 
@@ -11,14 +11,14 @@ Last updated: 2026-11-14
 
 | Item | State |
 | --- | --- |
-| Repository | Initialized (git), main branch — Phase 2 committed (`fbc3bf9`) |
+| Repository | Initialized (git), main branch — final product state |
 | Build | `npm run build` = `tsc -b && vite build` — **PASSING** (three.js isolated in lazy `vendor-three` chunk, 947 kB / 254 kB gzip, fetched only on `/globe` and `/explorer` 3D view) |
-| Tests | Vitest — **42/42 passing** (geo, catalog integrity, globe math, Button, AtlasPage, GlobeFallback) |
+| Tests | Vitest — **105/105 passing** (geo, catalog integrity, globe math, Button, AtlasPage, GlobeFallback, slopeClass, costModel, A*, Mars24, oxygen model, hazards terrain analysis, risk model, hazard detection, route exposure + pathGrid regression, profile accessibility, export builders) · Playwright E2E — **42 passed / 2 skipped** (desktop + mobile projects; incl. hazards flows and 4-viewport reference screenshots in `e2e/screenshots/`) |
 | Lint | `eslint .` — **PASSING** (0 errors, 0 warnings) |
 | Typecheck | `tsc -b` strict — **PASSING** |
-| Browser verification | **PASSING** — Phase 3 explorer walked live: HiRISE + CTX regional tiles composed, 2D pan/zoom, cursor elevation/slope readout (−2568.6 m / 0.4° at Jezero center), 3D displaced terrain view, layer toggles with attribution, rover track; zero console errors |
-| Dependencies | + three 0.187 / @react-three/fiber 9.8 / @react-three/drei 10.7 (Phase 2, lazy) · + geotiff 3.0.5 + sharp 0.35.5 (Phase 3 dev-time pipeline) |
-| Network verification | Trek WMTS tiles ✓ (6 global + 2 regional layer IDs + CORS `*`), MMGIS waypoints ✓, USGS planetarymaps DEM ✓, NSSDCA ✓, USGS Gazetteer ✓, ODE ✓, api.nasa.gov ✓, GISS Mars24 ✓ |
+| Browser verification | **PASSING** — full public workflow verified: dashboard → globe → explorer → hazards → planner → simulator, with cross-module links, sample route, and zero console errors. Hazards redesign verified live: cluster select → explainable inspector (real ramp × weight contributions, verified POI distances), inventory filters/sort/search, analytics chart-click → map highlight + clear, assessment distributions, methodology dialog, JSON/CSV export with real data, profile switch (Standard 40 clusters/961 critical → Capable 2 clusters/0 critical/77 high), cursor tooltip, Perseverance traverse toggle. Route handoff verified end-to-end: Planner sample route persists `{path, gridWidth:256, gridHeight:243}` without pressing Send; Hazards exposure 2.87 km (Planner 2.82 km), overlay drawn at correct position, 100% low severity, 0 cluster intersections; Send to Simulator imports with planner energy 919 kJ. |
+| Dependencies | + three 0.187 / @react-three/fiber 9.8 / @react-three/drei 10.7 (Phase 2, lazy) · + geotiff 3.0.5 + sharp 0.35.5 (Phase 3 dev-time pipeline) · + recharts 2.x (Phase 4) |
+| Network verification | Trek WMTS tiles ✓ (6 global + 2 regional layer IDs + CORS `*`), MMGIS waypoints ✓, USGS planetarymaps DEM ✓, NSSDCA ✓, USGS Gazetteer ✓, ODE ✓, api.nasa.gov ✓, GISS Mars24 ✓, Perseverance raw-images RSS feed ✓ |
 
 ## Completed
 
@@ -103,29 +103,105 @@ Last updated: 2026-11-14
       → `jezero_heightmap_rg16.png` (R+G encode 16-bit elevation) +
       `jezero_slope_degrees.png` + `jezero_metadata.json`; round-trip error < 0.01 m
 - [x] MMGIS rover-waypoint snapshot fetched and committed to `public/data/M20_waypoints.json`
-      (dated by fetch timestamp in metadata)
+      (snapshot label derived from the MMGIS filename)
 - [x] 2D slippy map: pan/zoom, viewport tile compositor, layer toggles (HiRISE/CTX), attribution,
       honest degradation notes for failed tiles, rover-track SVG overlay
+- [x] **Premium Explorer transformation (2026-11-15)**: full-screen GIS workspace with global
+      base-map + regional overlay composition, professional layer panel, opacity slider, dynamic
+      scale bar, lat/lon grid toggle, coverage boundary, point inspector, distance measurement,
+      elevation profile from DEM samples, quick-location jumps, and tile-loading status
 - [x] 3D terrain view: R3F plane displaced by the RG heightmap in a custom vertex shader,
-      slope-class coloring in fragment shader, OrbitControls, vertical-exaggeration slider
+      slope-class coloring in fragment shader, OrbitControls, vertical-exaggeration slider;
+      improved with starfield, hemisphere + directional lighting, DEM coverage boundary line,
+      and context plane
 - [x] Cursor inspection panel: lat/lon, elevation (measured), slope (derived) with class badge
-- [x] Verified live in browser: HiRISE + CTX layers switch, pan/zoom, elevation readout matches
-  expected range, 3D view renders, zero console errors
+- [x] Verified live in browser: HiRISE + CTX layers switch, global base map visible beyond
+      regional coverage, pan/zoom, elevation readout matches expected range, 3D view renders,
+      zero console errors
 - [x] Docs updated: K-3 resolved, DATA_SOURCES regional layers + DEM source, ARCHITECTURE
       Module C tree, README, CHANGELOG
 
+### Phase 4 — Terrain analysis & routing (Modules E + F) — COMPLETE
+- [x] Terrain engine (`src/engines/terrain/`): real elevation grid loader, slope classification,
+      cost-grid builder with central-difference slope recomputation
+- [x] **Premium Hazards workspace (2026-11-15)**: full-screen terrain-intelligence UI with
+      collapsible analysis panel, hazard inventory, area assessment, charts, inspector, and
+      coordinate bar
+- [x] Hazards analysis engine (`src/engines/hazards/`): Horn slope, TRI, roughness, local relief,
+      aspect, explicit nodata masking, connected-component clustering, configurable mobility
+      profiles, and transparent risk scoring
+- [x] Hazards visualization: slope / roughness / relief / aspect / combined-risk / cluster canvas
+      overlays rendered over the global + regional base map
+- [x] Hazards integration: Planner persists route path nodes; Hazards computes per-segment terrain
+      exposure, severity percentages, and cluster intersections; "Send to Simulator" and
+      "Plan route near cluster" actions
+- [x] A* pathfinding engine (`src/engines/pathfinding/`): 8-connected binary-heap A*, Pandolf-derived
+      metabolic-energy edge cost, Mars gravity + suit-penalty assumptions, admissible heuristic
+- [x] Route planner UI: click-to-set start/destination, recommended + alternative routes,
+      straight-line comparison, distance/energy/slope stats, terrain difficulty breakdown,
+      explanation panel, elevation profile (Recharts)
+- [x] Shared map components: `features/mars-explorer/index.ts` barrel (now includes `MapCanvas`),
+      `viewport.ts`, `HazardOverlay.ts`, `TileMap` click + overlay support
+- [x] Verified live in browser: hazard overlays, 40 dynamic clusters, inventory/assessment/charts
+      panels, cluster inspection, Planner route exposure, zero console errors
+- [x] Docs updated: `CHANGELOG.md`, `PROJECT_STATUS.md`, `DATA_SOURCES.md`, `KNOWN_ISSUES.md`,
+      `DECISIONS.md` (D-012, D-015)
+
+### Phase 6.1 — Hazards workspace redesign & route-handoff fixes (2026-11-15) — COMPLETE
+- [x] Three-part GIS workspace: compact analysis header (metric chips, Methodology dialog,
+      Export menu, Reset), collapsible left analysis controls, dominant map, right
+      Inventory / Assessment / Analytics / Route tab panel; inspector replaces tabs on selection
+- [x] Explainable inspector: per-factor contributions via `computeFactorContributions` (real
+      ramp × weight math), measured-vs-derived labeling, nearest verified POI distances,
+      back-to-inventory, "plan route near cluster"
+- [x] Inventory: functional severity/factor/area/slope filters, sorting, ID search, hover map
+      preview, severity-accented cards; engine severity colors shared across map/cards/charts
+- [x] Map: SVG cluster outlines (hover/selected/analytics-highlight), route geometry overlay,
+      optional Perseverance traverse overlay, cursor-following terrain tooltip, scale bar
+- [x] Analytics: clickable severity/factor bars highlight matching clusters on the map (clearable);
+      slope/roughness/relief histograms of real cluster statistics
+- [x] Route-handoff fixes: persisted route now `{path, gridWidth, gridHeight}` (D-016);
+      `computeRouteExposure` accepts `PathGridExtent` + precomputed analysis (no ~603k-cell
+      recompute); summary key optional; `totalEnergyKJ` optional in `RouteSummary`; Planner
+      persists every computed route and Reset clears the handoff
+- [x] MMGIS waypoint parser accepts string and array coordinates (D-018) — committed snapshot
+      renders again
+- [x] Accessibility engine (`engines/hazards/accessibility.ts`) + tests; export builders
+      (`exportAnalysis.ts`) + tests
+- [x] Verified live and via Playwright: 42 passed / 2 skipped; reference screenshots captured at
+      1920×1080, 1440×900, 1024×768, 390×844 (`e2e/screenshots/`)
+- [x] Docs updated: `CHANGELOG.md`, `PROJECT_STATUS.md`, `DECISIONS.md` (D-016, D-017, D-018)
+
+### Phase 5 — Marswalk simulation (Module G) — COMPLETE
+- [x] Simulation engines (`src/engines/simulation/`):
+      - `marsTime.ts` — NASA GISS Mars24 algorithm (Allison & McEwen 2000), validated against
+        both GISS worked examples (2000-01-06 epoch case and Spirit landing case) in unit tests
+      - `missionConfig.ts` — zod schema + default config; `RouteSummary` schema + the
+        `ares:simulator-route-summary` localStorage key
+      - `oxygenModel.ts` — Pandolf energy → 20.1 kJ/L O₂ → gas mass (1.429 g/L at STP);
+        point-of-no-return with 1.2× return-path detour factor
+      - `verdict.ts` — READY (margin ≥ +20%) / CAUTION / NO-GO classification
+      - `radiation.ts` — MSL RAD 0.64 mSv/sol dose context vs. 600 mSv career limit
+- [x] `SimulatorPage.tsx`: live Mars24 clock for Jezero (LTST/LMST/MSD/Lₛ/season/sun elevation),
+      fully editable config (route, astronaut, suit, O₂, reserve, stops), oxygen budget panel,
+      duration & energy panel, point-of-no-return panel, radiation context panel, assumptions
+      panel with sources, and a persistent "planning estimate, not certified" disclaimer
+- [x] Route-planner hand-off: "Send to Marswalk simulator" button exports distance, elevation
+      gain/loss, max/average slope and total energy to localStorage; the simulator auto-imports
+      it on arrival and labels the imported config
+- [x] Verified live in browser: `/simulator` renders with zero console errors; the full
+      planner → send → simulator round trip imports the real route (3.45 km in the walkthrough)
+- [x] Docs updated: `CHANGELOG.md`, `PROJECT_STATUS.md`, `SCIENTIFIC_MODELS.md` (§3–§5b),
+      `DEVELOPMENT_ROADMAP.md`, `ARCHITECTURE.md`
+
 ## In progress
-- (nothing — Phase 3 closed)
+- (nothing — all planned phases complete)
 
 ## Pending (next phases)
-- **Phase 4 — Terrain analysis & routing**: slope classification, hazard overlay, A* on
-  terrain-cost grid, route comparison, elevation profiles (Recharts)
-- **Phase 5 — Marswalk simulator**: oxygen budget (Pandolf-derived), Mars24 mission clock,
-  READY/CAUTION/NO-GO verdict, return feasibility
-- **Phase 6 — Polish**: performance, a11y, Playwright E2E, demo script, deployment
+- No further phases planned for the Space Apps 2026 submission. Future work (additional regions, geologic map overlay, raw-image gallery) is tracked in `docs/KNOWN_ISSUES.md` and `docs/DATA_SOURCES.md`.
 
 ## Known bugs
-- None recorded. Open risks/limitations tracked in `docs/KNOWN_ISSUES.md` (K-1…K-10).
+- None recorded. Open risks/limitations tracked in `docs/KNOWN_ISSUES.md` (K-1…K-15).
 
 ## Environment notes (affect development)
 - PowerShell execution policy blocks `npm.ps1` → use `npm.cmd` (documented; do not "fix" in scripts)
@@ -137,6 +213,5 @@ Last updated: 2026-11-14
   another verified source requires them, marked accordingly in `docs/DATA_SOURCES.md`
 
 ## Next recommended task
-Start **Phase 4 — Terrain analysis & route planning** (Modules E + F): slope/difficulty grids,
-hazard overlay, A* pathfinding over the committed DEM cost grid, route UI with profiles and
-explanation panel.
+No further work required for the hackathon submission. For post-demo maintenance, see
+`docs/FINAL_PRODUCT_AUDIT.md` for the complete audit and remaining polish opportunities.

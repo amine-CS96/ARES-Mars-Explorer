@@ -41,21 +41,24 @@ Sources registry, Trek provider, tests.
   toggle with live attribution; 3D terrain displaces from the committed heightmap; no fabricated
   elevation. Verified in browser with zero console errors. *(done 2026-11-14)*
 
-## PHASE 4 — Terrain analysis & routing (Modules E + F)
-- [ ] Slope/difficulty grids + hazard overlay (documented thresholds)
-- [ ] Point inspector (elevation, slope, class, uncertainty)
-- [ ] A* engine (pure TS) + cost function per ROUTE_PLANNING.md
-- [ ] Route UI: endpoints, stops, alternative, straight-line compare, profile (Recharts),
+## PHASE 4 — Terrain analysis & routing (Modules E + F) ✅
+- [x] Slope/difficulty grids + hazard overlay (documented thresholds)
+- [x] Point inspector (elevation, slope, class, uncertainty)
+- [x] A* engine (pure TS) + cost function per ROUTE_PLANNING.md
+- [x] Route UI: endpoints, alternative, straight-line compare, profile (Recharts),
       explanation panel
 - **DoD:** optimality/admissibility unit tests pass; <100 ms route on target grid; honest
-  labeling everywhere.
+  labeling everywhere. *(met 2026-11-14)*
 
-## PHASE 5 — Marswalk simulation (Module G)
-- [ ] Mission config (zod) + assumptions panel; Mars24 clock; oxygen model (Pandolf-derived)
-- [ ] Verdict READY/CAUTION/NO-GO + margin; return feasibility; point-of-no-return visual
-- [ ] Radiation/context panel (RAD constant, cited)
-- **DoD:** model outputs reproduce reference-paper examples within stated tolerance;
-  every constant editable and displayed with source; disclaimer always visible.
+## PHASE 5 — Marswalk simulation (Module G) ✅
+- [x] Mission config (zod) + assumptions panel; Mars24 clock; oxygen model (Pandolf-derived)
+- [x] Verdict READY/CAUTION/NO-GO + margin; return feasibility; point-of-no-return estimate
+- [x] Radiation/context panel (RAD constant, cited)
+- [x] Route-planner hand-off: "Send to Marswalk simulator" exports a route summary
+      (`ares:simulator-route-summary` in localStorage) that the simulator imports
+- **DoD:** Mars24 outputs reproduce both GISS worked examples within stated tolerance (unit
+  tests); every constant editable and displayed with source or assumption label; disclaimer
+  always visible. *(met 2026-11-14)*
 
 ## PHASE 6 — Polish & presentation
 - [ ] Performance pass (bundle budget, image sizes, memo audit)

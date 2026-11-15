@@ -8,25 +8,26 @@ It combines real NASA/ESA/USGS planetary data, interactive 3D visualization, ter
 analysis, safe route planning (A* over terrain cost), and a Marswalk mission simulator with an
 explicit, documented scientific basis.
 
-**Status:** Phase 3 of 6 — professional foundation, live 3D Mars globe, and the **Jezero
-Crater surface explorer** (regional HiRISE/CTX tiles, Node DEM pipeline to heightmap + slope
-grid, 2D/3D terrain views with cursor elevation/slope readout, rover-track overlay). See
-[`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the live state of development.
+**Status:** Shipped product — a public-facing Mars exploration and Marswalk planning
+platform centered on Jezero Crater. All modules are live: global 3D globe, Jezero surface
+explorer with real HiRISE/CTX tiles and USGS CTX 20 m DEM, slope-based hazard analysis,
+A* route planner, and Marswalk simulator. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md)
+for the latest verification results.
 
 ---
 
 ## What ARES does
 
-| Module | Purpose | Phase |
+| Capability | Purpose | Status |
 | --- | --- | --- |
-| **Mission Dashboard** | Mission control overview: planetary statistics, featured sites, data-source status | 1 ✓ |
-| **Interactive Mars Globe** | Real-texture 3D globe (Three.js), markers, atmosphere, quality tiers | 2 ✓ |
-| **Surface Explorer** | Jezero Crater in 2D/3D: imagery, elevation, layers, terrain panels | 3 ✓ |
-| **Points of Interest** | Searchable, source-cited collection of Martian exploration sites | 1 ✓ (data live) |
-| **Hazard Analysis** | Slope/roughness-based terrain difficulty with documented criteria | 4 |
-| **Route Planner** | A* pathfinding over terrain-cost grid; route comparison + profiles | 4 |
-| **Marswalk Simulator** | Oxygen budget, duration, return feasibility → READY / CAUTION / NO-GO | 5 |
-| **Data Sources** | Full transparency: provider, instrument, resolution, coverage, kind, credits | 1 ✓ (registry live) |
+| **Mission Dashboard** | Mission control overview: planetary statistics, featured sites, data-source status | Live |
+| **Interactive Mars Globe** | Real-texture 3D globe with markers, atmosphere and quality tiers | Live |
+| **Surface Explorer** | Jezero Crater in 2D/3D: imagery, elevation, layers, terrain panels | Live |
+| **Points of Interest** | Searchable, source-cited collection of Martian exploration sites | Live |
+| **Hazard Analysis** | Slope-derived terrain difficulty with documented criteria | Live |
+| **Route Planner** | A* pathfinding over terrain-cost grid; route comparison + profiles | Live |
+| **Marswalk Simulator** | Oxygen budget, duration, return feasibility → READY / CAUTION / NO-GO | Live |
+| **Data Sources** | Full transparency: provider, instrument, resolution, coverage, kind, credits | Live |
 
 Everything scientific in ARES is traceable: every coordinate carries an accuracy label
 (`verified` / `approximate` / `illustrative`), every dataset its provider, instrument and
@@ -70,7 +71,7 @@ This project maintains a permanent documentation system for humans and AI sessio
 - NASA **Mars Trek WMTS** tiles — global + regional (MOLA, Viking, HRSC, THEMIS, Jezero HiRISE
   25 cm, Jezero CTX 6 m; `https://trek.nasa.gov/tiles/Mars/EQ/...`, verified HTTP 200)
 - USGS **Mars 2020 TRN CTX DTM Mosaic** — Jezero 20 m elevation (processed into committed
-  heightmap + slope PNGs via Node `geotiff.js` + `sharp`)
+  heightmap + slope PNGs for fast browser access)
 - NASA/JPL **MMGIS** Perseverance waypoint feed (`M20_waypoints.json`, verified HTTP 200)
 - NASA **NSSDCA Mars fact sheet** for planetary statistics
 - USGS **Gazetteer of Planetary Nomenclature** for feature coordinates

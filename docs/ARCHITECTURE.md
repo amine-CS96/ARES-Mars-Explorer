@@ -70,16 +70,21 @@ src/
 │   │   ├── roverTrack.ts       MMGIS waypoint parser
 │   │   └── useRoverTrack.ts    TanStack Query wrapper for the snapshot
 │   ├── points-of-interest/     Atlas: search/filter/detail (live since Phase 1)
-│   ├── hazard-analysis/        Phase 4
-│   ├── route-planner/          Phase 4
-│   ├── mission-simulator/      Phase 5
+│   ├── hazard-analysis/        Terrain hazard overlay + inspector (live since Phase 4)
+│   ├── route-planner/          A* route planner + stats + profile (live since Phase 4)
+│   ├── mission-simulator/      Marswalk simulator: config, clock, verdicts (live since Phase 5)
 │   └── data-sources/           registry UI (live since Phase 1)
+├── engines/                    pure TS science layer (live since Phase 4)
+│   ├── terrain/                slope classes, terrain grid, cost grid
+│   ├── pathfinding/            A*, metabolic-energy cost model, route explanation
+│   └── simulation/             Mars24 time, mission config (zod), oxygen budget, verdict, radiation
 ├── services/nasa/
 │   ├── marsTrekProvider.ts     verified WMTS tile URL builder + layer descriptors
 │   ├── dataCatalog.ts          typed registry over data/datasets.ts
 │   └── types.ts
 ├── stores/uiStore.ts
 ├── hooks/usePrefersReducedMotion.ts
+├── hooks/useTerrainGrid.ts     TanStack Query wrapper for the DEM grid
 ├── types/                      geo.ts, poi.ts, dataset.ts (zod schemas + TS types)
 ├── data/                       places.ts, datasets.ts, planetaryFacts.ts, program.ts
 ├── utils/                      cn.ts, geo.ts, format.ts
@@ -88,8 +93,10 @@ src/
 └── scripts/                    dev-time data pipelines
     └── build-jezero-terrain.mjs   Node geotiff.js + sharp DEM → heightmap/slope/metadata
 
-public/data/                    committed pipeline outputs + snapshots
-├── jezero_ctx_dem_20m.tif      source USGS CTX DTM (committed for reproducibility)
+source-data/                    dev-time source rasters (in git, NOT shipped to dist/)
+└── jezero_ctx_dem_20m.tif      source USGS CTX DTM — input to build-jezero-terrain.mjs
+
+public/data/                    committed pipeline outputs + snapshots (shipped, runtime-fetched)
 ├── jezero_heightmap_rg16.png   RG-encoded 16-bit elevation heightmap
 ├── jezero_slope_degrees.png    8-bit grayscale slope grid
 ├── jezero_metadata.json        source, bbox, encoding, thresholds
@@ -112,8 +119,18 @@ for 3D displacement.
 **Catalog → UI (Phase 1, live):** `data/places.ts` (zod-validated) → `features/points-of-interest`
 components → Atlas page/dashboard. No runtime fabrication.
 
-**Mission sim (Phase 5, planned):** UI collects `MissionConfig` (zod) → `engines/simulation`
-computes `MissionResult` → UI renders verdict + assumptions; nothing mutates the input silently.
+**Terrain grid → hazard/route (Phase 4, live):** `public/data/jezero_*.{png,json}` →
+`loadTerrainGrid()` → `engines/terrain/costGrid.ts` → `engines/pathfinding/astar.ts` →
+`features/route-planner/` UI. Slope classes flow to `features/hazard-analysis/HazardsPage.tsx`
+as a geographic raster overlay. Every output is labeled `measured`, `derived`, `heuristic` or
+`simulated`.
+
+**Mission sim (Phase 5, live):** route planner exports a `RouteSummary` to localStorage
+(`ares:simulator-route-summary`) → the simulator imports it into the zod-validated
+`MissionConfig` → `engines/simulation/oxygenModel.ts` computes the O₂ budget (Pandolf energy →
+20.1 kJ/L → mass) → `verdict.ts` classifies READY/CAUTION/NO-GO → the UI renders the verdict,
+Mars24 clock, point-of-no-return and radiation context with every assumption editable and
+labeled. Nothing mutates the input silently.
 
 ## 4. State ownership
 

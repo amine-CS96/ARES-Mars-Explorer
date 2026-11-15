@@ -15,7 +15,7 @@ const REASONS: Record<GlobeFallbackReason, { title: string; body: string }> = {
   },
   'data-unavailable': {
     title: 'Mosaic data unavailable right now',
-    body: 'The Mars Trek tile service could not be reached, so no planet texture can be composed. ARES does not substitute fake imagery — retry, and check docs/DATA_SOURCES.md for the endpoint status.',
+    body: 'The Mars Trek tile service could not be reached, so no planet texture can be composed. ARES does not substitute fake imagery — retry, or visit the Data Sources page for endpoint credits and status.',
   },
 }
 

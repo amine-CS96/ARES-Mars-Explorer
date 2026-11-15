@@ -1,6 +1,11 @@
 import { Box, Map as MapIcon, Mountain, Satellite } from 'lucide-react'
 import type { TrekLayer } from '@/services/nasa/types'
 import { formatLatLon } from '@/utils/geo'
+import {
+  SLOPE_CLASS_COLORS,
+  slopeClass,
+  type SlopeClassKey,
+} from '@/engines/terrain/slopeClass'
 import type { TerrainSample } from './elevationSampler'
 
 export interface ExplorerHudProps {
@@ -13,20 +18,6 @@ export interface ExplorerHudProps {
   terrain: TerrainSample | null
   verticalScale: number
   onVerticalScaleChange: (value: number) => void
-}
-
-const SLOPE_CLASS_COLORS: Record<string, string> = {
-  flat: '#34d399',
-  moderate: '#fbbf24',
-  steep: '#e56b3f',
-  hazardous: '#f87171',
-}
-
-function slopeClass(deg: number): { key: string; label: string } {
-  if (deg < 5) return { key: 'flat', label: 'Flat to gently sloping' }
-  if (deg < 15) return { key: 'moderate', label: 'Moderate slope' }
-  if (deg < 25) return { key: 'steep', label: 'Steep slope' }
-  return { key: 'hazardous', label: 'Hazardous / impassable' }
 }
 
 export function ExplorerHud({
@@ -162,12 +153,14 @@ export function ExplorerHud({
       {/* Legend */}
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2">
         <div className="flex gap-3 rounded-lg border border-line bg-space/85 px-2.5 py-1.5 backdrop-blur-md">
-          {[
-            { key: 'flat', label: '< 5°' },
-            { key: 'moderate', label: '5–15°' },
-            { key: 'steep', label: '15–25°' },
-            { key: 'hazardous', label: '> 25°' },
-          ].map((item) => (
+          {(
+            [
+              { key: 'flat', label: '< 5°' },
+              { key: 'moderate', label: '5–15°' },
+              { key: 'steep', label: '15–25°' },
+              { key: 'hazardous', label: '> 25°' },
+            ] as Array<{ key: SlopeClassKey; label: string }>
+          ).map((item) => (
             <span key={item.key} className="flex items-center gap-1 font-mono text-[9px] text-ink-dim">
               <span
                 aria-hidden="true"

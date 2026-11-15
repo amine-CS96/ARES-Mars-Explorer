@@ -19,7 +19,7 @@ import sharp from 'sharp'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const INPUT = 'public/data/jezero_ctx_dem_20m.tif'
+const INPUT = 'source-data/jezero_ctx_dem_20m.tif'
 const OUT_DIR = 'public/data'
 const MARS_RADIUS_M = 3_396_190 // product radius, USGS page
 

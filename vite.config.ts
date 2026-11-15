@@ -26,10 +26,9 @@ export default defineConfig({
           }
           if (/[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/.test(id)) return 'vendor-query'
           if (/[\\/]node_modules[\\/]zod[\\/]/.test(id)) return 'vendor-zod'
-          if (/[\\/]node_modules[\\/](@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/.test(id)) {
-            return 'vendor-ui'
-          }
-          return 'vendor-misc'
+          // Consolidate all remaining libraries into the UI chunk to avoid circular chunk
+          // references at runtime (some UI libs and chart libs cross-import each other).
+          return 'vendor-ui'
         },
       },
     },

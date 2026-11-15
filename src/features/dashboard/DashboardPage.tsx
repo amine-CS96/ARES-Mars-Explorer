@@ -2,14 +2,14 @@ import { HeroSection } from './sections/HeroSection'
 import { ModuleGrid } from './sections/ModuleGrid'
 import { PlanetaryStatsSection } from './sections/PlanetaryStatsSection'
 import { FeaturedLocationsSection } from './sections/FeaturedLocationsSection'
-import { ProgramStatusSection } from './sections/ProgramStatusSection'
+import { MissionWorkflowSection } from './sections/MissionWorkflowSection'
 import { DataStatusSection } from './sections/DataStatusSection'
 import { Separator } from '@/components/ui/separator'
 
 /**
- * Module A — Mission Dashboard. Sections:
- * 1. Mission Control (hero) · 2. Modules · 3. Telemetry · 4. Featured sites ·
- * 5. Program status · 6. Data spine
+ * Mission Control dashboard. Sections:
+ * 1. Hero · 2. Mission systems · 3. Planetary telemetry · 4. Featured sites ·
+ * 5. Mission workflow · 6. Data spine
  */
 export function DashboardPage() {
   return (
@@ -18,7 +18,7 @@ export function DashboardPage() {
       <ModuleGrid />
       <PlanetaryStatsSection />
       <FeaturedLocationsSection />
-      <ProgramStatusSection />
+      <MissionWorkflowSection />
       <Separator className="mx-4 sm:mx-6" />
       <DataStatusSection />
     </div>

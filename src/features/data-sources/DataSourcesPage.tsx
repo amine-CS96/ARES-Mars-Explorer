@@ -31,7 +31,7 @@ export function DataSourcesPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="animate-fade-up">
-        <p className="eyebrow mb-2">Module H · Scientific transparency</p>
+        <p className="eyebrow mb-2">Scientific data sources</p>
         <h1 className="font-display text-3xl font-bold tracking-wide text-ink sm:text-4xl">
           Data Sources
         </h1>
@@ -77,9 +77,6 @@ export function DataSourcesPage() {
             <div className="flex flex-wrap items-center gap-2">
               <DataKindBadge kind={d.kind} />
               <DatasetStatusBadge status={d.status} />
-              <Badge variant="outline" className="ml-auto">
-                Phase {d.phase}
-              </Badge>
             </div>
             <h2 className="mt-3 font-display text-base font-semibold tracking-wide text-ink">
               {d.name}
@@ -150,8 +147,7 @@ export function DataSourcesPage() {
         <p className="max-w-4xl text-sm leading-relaxed text-ink-dim">{ATTRIBUTION_LINE}</p>
         <p className="mt-2 max-w-4xl text-sm leading-relaxed text-ink-dim">
           References studied during development: NASA Mars Trek (tile services and API docs) and
-          the Sol Atlas project (Apache-2.0) — architectural inspiration only; no code was copied.
-          Fonts and libraries are credited in docs/DATA_SOURCES.md.
+          the Sol Atlas project — architectural inspiration only; no code was copied.
         </p>
         <p className="mt-4 max-w-4xl rounded-lg border border-amber/25 bg-amber/[0.06] p-3 text-xs leading-relaxed text-amber/90">
           {DISCLAIMER_LINE} Outputs shown in route and simulation modules are planning estimates
@@ -160,8 +156,8 @@ export function DataSourcesPage() {
         <p className="mt-3 text-[11px] text-ink-faint">
           Status legend: <span className="text-success">AVAILABLE</span> = verified live from this
           environment · <span className="text-amber">PENDING CHECK</span> = catalog-confirmed,
-          endpoint details still to be derived · <span className="text-ink-dim">PLANNED</span> = on
-          the roadmap for a later phase.
+          endpoint details still to be derived · <span className="text-ink-dim">PLANNED</span> = not
+          yet integrated.
         </p>
       </div>
     </div>

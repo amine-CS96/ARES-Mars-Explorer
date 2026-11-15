@@ -4,7 +4,6 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { NAV_ITEMS } from './navConfig'
 import { LogoMark } from './LogoMark'
 import { useUiStore } from '@/stores/uiStore'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/utils/cn'
 
 const linkBase =
@@ -68,9 +67,9 @@ export function MobileNav() {
           </nav>
 
           <div className="mt-auto flex flex-col gap-3 border-t border-line pt-4">
-            <Badge variant="default" className="w-fit">
-              Phase 1 · Foundation
-            </Badge>
+            <span className="w-fit rounded border border-line bg-white/[0.03] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+              NASA Space Apps 2026
+            </span>
             <p className="text-[11px] leading-relaxed text-ink-faint">
               Data: NASA/JPL/USGS/ESA. Educational project — not an operational safety system.
             </p>

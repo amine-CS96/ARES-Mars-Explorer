@@ -42,9 +42,8 @@ export function MolaMosaicStrip() {
         </div>
       </div>
       <p className="text-[11px] leading-relaxed text-ink-faint">
-        Served live from NASA Mars Trek WMTS tiles. The interactive 3D globe built on this
-        imagery arrives in Phase 2 — until then, this strip shows the actual mosaic the globe
-        will use.
+        Served live from NASA Mars Trek WMTS tiles. The same global MOLA color-hillshade mosaic
+        drives the interactive 3D Mars globe.
       </p>
     </div>
   )
